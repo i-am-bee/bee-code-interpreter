@@ -1,0 +1,9 @@
+# Python
+.venv
+__pycache__
+
+# VSCode
+.vscode
+
+# JetBrains
+.idea

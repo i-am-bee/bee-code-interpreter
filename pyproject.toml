@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "bee-code-interpreter"
+version = "0.0.1"
+license = "Apache-2.0"
+description = ""
+authors = [ "Jan Pokorný <jan.pokorny@ibm.com>" ]
+packages = [ { include = "code_interpreter", from = "src" }, { include = "proto", from = "submodules/bee-proto/gen/python" }, { include = "buf", from = "submodules/bee-proto/gen/python" } ]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+aiorun = "^2024.5.1"
+anyio = "^4.4.0"
+apscheduler = "^3.10.4"
+frozendict = "^2.4.4"
+grpcio = "^1.64.1"
+grpcio-reflection = "^1.64.1"
+protovalidate = "^0.3.1"
+pydantic = "^2.7.3"
+pydantic-settings = "^2.3.0"
+tenacity = "^8.3.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

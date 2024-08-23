@@ -1,0 +1,19 @@
+#!/bin/bash
+shopt -s dotglob
+
+TMPDIR=$(mktemp -d)
+
+cat >$TMPDIR/script.py
+
+GUESSED_DEPENDENCIES=$(cd $TMPDIR && upm guess 2>/dev/null)
+
+if [ ! -z "$GUESSED_DEPENDENCIES" ]; then
+    pip install --no-cache-dir $GUESSED_DEPENDENCIES >/dev/null 2>/dev/null
+fi
+
+timeout ${APP_EXECUTION_TIMEOUT:-60} python <$TMPDIR/script.py
+RETVAL=$?
+
+rm -rf /home/ubuntu/*
+
+exit $RETVAL

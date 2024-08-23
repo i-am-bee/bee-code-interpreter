@@ -1,0 +1,56 @@
+# According to: https://wfhbrian.com/mastering-chatgpts-code-interpreter-list-of-python-packages/
+# minus the ones that obviously need internet access (web scraping, databases, etc.)
+
+# * = installed as APT packages
+# ! = not compatible with Python 3.12 at the moment
+
+# Data Analysis and Manipulation:
+# *pandas
+# *numpy
+# *scipy
+# *xarray
+
+# Machine Learning:
+# *scikit-learn
+# *xgboost
+keras
+torch
+
+# Natural Language Processing:
+# *nltk
+# !spacy
+textblob
+# *gensim
+
+# Data Visualization:
+# *matplotlib
+# *seaborn
+# *plotly
+bokeh
+
+# Deep Learning:
+keras
+torch
+
+# Image Processing:
+# *pillow
+# *imageio
+# *opencv-python
+scikit-image
+
+# Audio Processing:
+librosa
+# *pyaudio
+# *soundfile
+
+# File Format:
+# *openpyxl
+# *xlrd
+pyPDF2
+# *python-docx
+
+# Others:
+# *pytest
+# *joblib
+# *pytz
+pyyaml
