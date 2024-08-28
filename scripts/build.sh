@@ -50,4 +50,4 @@ else
 fi
 
 echo "Removing old images (if any)"
-cd $IMAGES_DIR && ls | grep -xv "${IMAGE_FILENAME}" | xargs -I {} sh -c 'echo "Deleting {}" && rm "{}"'
+ls "$IMAGES_DIR" | grep -xv "${IMAGE_FILENAME}" | xargs -I {} sh -c "echo \"Deleting {}\" && rm \"$IMAGES_DIR/{}\""
