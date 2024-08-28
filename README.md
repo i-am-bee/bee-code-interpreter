@@ -60,6 +60,14 @@ Stop the server using:
 poe compose-down
 ```
 
+### 🧪 Test
+
+>⚠️ Server must be up and running prior.
+
+```bash
+poe test
+```
+
 ---
 
 ## 📣 Publishing
