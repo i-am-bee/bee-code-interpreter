@@ -30,7 +30,7 @@ services:
     environment:
       APP_EXECUTOR_IMAGE: ${APP_EXECUTOR_IMAGE:-localhost/bee-code-interpreter-executor:local}
       APP_FILE_STORAGE_PATH: "/storage"
-      KUBECONFIG: "/kubeconfig"
+      KUBECONFIG: "/kubeconfig.yaml"
     volumes:
       - k3s-config:/etc/rancher/k3s
       - ${APP_FILE_STORAGE_PATH:-./.tmp/files}:/storage
