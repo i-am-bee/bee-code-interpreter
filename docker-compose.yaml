@@ -30,6 +30,7 @@ services:
     environment:
       APP_EXECUTOR_IMAGE: ${APP_EXECUTOR_IMAGE:-localhost/bee-code-interpreter-executor:local}
       APP_FILE_STORAGE_PATH: "/storage"
+      KUBECONFIG: "/kubeconfig"
     volumes:
       - k3s-config:/etc/rancher/k3s
       - ${APP_FILE_STORAGE_PATH:-./.tmp/files}:/storage
@@ -39,7 +40,7 @@ services:
     command:
       - >
         sed 's|127.0.0.1|k3s|g' /etc/rancher/k3s/k3s.yaml >/kubeconfig.yaml 2>/dev/null &&
-        KUBECONFIG=/kubeconfig.yaml python -m code_interpreter
+        python -m code_interpreter
 
 volumes:
   k3s-config:
