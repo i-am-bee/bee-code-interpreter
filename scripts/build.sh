@@ -38,7 +38,8 @@ echo "Building image"
 docker build --progress=plain -t "$IMAGE_NAME" executor
 
 IMAGE_HASH=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE_NAME" | md5sum | awk '{print $1}')
-IMAGE_OUTPUT_PATH="$IMAGES_DIR/$IMAGE_HASH.tar"
+IMAGE_FILENAME="$IMAGE_HASH.tar"
+IMAGE_OUTPUT_PATH="$IMAGES_DIR/$IMAGE_FILENAME"
 
 if [ ! -f "$IMAGE_OUTPUT_PATH" ]; then
   echo "Dumping image"
@@ -47,3 +48,6 @@ if [ ! -f "$IMAGE_OUTPUT_PATH" ]; then
 else
   echo "Dumped image already exists and has same hash. Skipping."
 fi
+
+echo "Removing old images (if any)"
+cd $IMAGES_DIR && ls | grep -xv "${IMAGE_FILENAME}" | xargs -I {} sh -c 'echo "Deleting {}" && rm "{}"'
