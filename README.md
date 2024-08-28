@@ -21,17 +21,31 @@ Pre-requisites:
 - `git`
 - `docker` (we recommend using [Rancher Desktop](https://rancherdesktop.io/))
 - `grpcurl` (optional -- for testing)
+- `python` 3.12+
 
-### ⬇️ Clone this repo
+### Clone this repo
 
 This project contains submodules. Be sure to clone it with `git clone --recurse-submodules`, or initialize the submodules later with `git submodule update --init`.
 
-### 🚀 Run the server
+### Prepare environment
+
+```shell
+python -m venv .venv
+source .venv/bin/activate  # On Windows, use .venv\Scripts\activate
+```
+
+### Install dependencies
+
+```shell
+poetry install
+```
+
+### 🚀 Run
 
 Run the server using:
 
 ```bash
-docker compose up --build --detach
+poe compose-up
 ```
 
 🎉 Bee Code Interpreter should now be running in the background! You can test it using `grpcurl`:
@@ -43,10 +57,16 @@ grpcurl -d '{"executor_id":"1","source_code":"print(\"hello world\")"}' -plainte
 Stop the server using:
 
 ```bash
-docker compose down --volumes
+poe compose-down
 ```
 
 ---
+
+## 📣 Publishing
+
+```shell
+poe publish $NEW_VERSION
+```
 
 ## 🧳 Production set-up
 
