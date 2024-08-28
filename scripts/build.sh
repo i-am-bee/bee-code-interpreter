@@ -18,6 +18,8 @@ set -e
 ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && cd .. && pwd )
 
 STORAGE_PATH=${APP_FILE_STORAGE_PATH:-"$ROOT_DIR/.tmp/files"}
+mkdir -p "$STORAGE_PATH"
+
 if [[ ! "$STORAGE_PATH" || ! -d "$STORAGE_PATH" ]]; then
   echo "Could not create storage directory"
   exit 1
