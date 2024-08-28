@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import json
 from pathlib import Path
 import shutil
@@ -43,8 +43,9 @@ def grpc_stub(config: Config):
 
 @pytest.fixture(autouse=True)
 def clear_storage(config: Config):
-    # Clear local storage
-    shutil.rmtree(config.file_storage_path, ignore_errors=True)
+    for dirpath, dirnames, filenames in os.walk(config.file_storage_path):
+        for name in filenames + dirnames:
+            shutil.rmtree(os.path.join(dirpath, name), ignore_errors=True)
 
 
 def read_file(file_hash: str, file_storage_path: str):

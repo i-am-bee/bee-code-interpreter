@@ -7,3 +7,6 @@ __pycache__
 
 # JetBrains
 .idea
+
+# Local
+.tmp

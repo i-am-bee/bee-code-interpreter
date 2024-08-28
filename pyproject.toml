@@ -3,7 +3,7 @@ name = "bee-code-interpreter"
 version = "0.0.1"
 license = "Apache-2.0"
 description = ""
-authors = [ "Jan Pokorný <jan.pokorny@ibm.com>" ]
+authors = [ "Jan Pokorný <jan.pokorny@ibm.com>", "Tomáš Dvořák <tomas.dvorak@ibm.com>" ]
 packages = [ { include = "code_interpreter", from = "src" }, { include = "proto", from = "submodules/bee-proto/gen/python" }, { include = "buf", from = "submodules/bee-proto/gen/python" } ]
 
 [tool.poetry.dependencies]
@@ -22,7 +22,22 @@ tenacity = "^8.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"
+poethepoet = "^0.27.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks.compose-up]
+sequence = [{ shell = "./scripts/build.sh" }, { shell = "docker compose up -d" }]
+
+[tool.poe.tasks.compose-down]
+sequence = [{ shell = "docker compose down --volumes" }]
+
+[tool.poe.tasks.publish]
+help = "Bump version + build and publish docker images"
+args = [{ name = "version", positional = true, required = true, multiple = false }]
+sequence = [{ cmd = "poetry version ${version}" }, { shell = "./scripts/copyright.sh" }, { shell = "./scripts/publish.sh" }]
+
+[tool.poe.tasks.test]
+shell = "APP_FILE_STORAGE_PATH=${APP_FILE_STORAGE_PATH:-./.tmp/files} pytest -v test"

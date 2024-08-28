@@ -15,7 +15,7 @@
 ARG GO_VERSION="1.22.5"
 ARG UPM_VERSION="2.3.0"
 
-FROM golang:${GO_VERSION} AS build-upm
+FROM docker.io/golang:${GO_VERSION} AS build-upm
 
 ARG UPM_VERSION
 

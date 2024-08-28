@@ -1,4 +1,4 @@
-FROM python:3.12 AS builder
+FROM docker.io/python:3.12 AS builder
 
 RUN apt-get update &&\
     apt-get install --no-install-suggests --no-install-recommends --yes pipx
@@ -15,9 +15,9 @@ COPY . .
 RUN poetry bundle venv --python=/usr/local/bin/python --only=main /venv
 
 
-FROM python:3.12-slim AS runtime
+FROM docker.io/python:3.12-slim AS runtime
 
-COPY --from=bitnami/kubectl:1.26.15 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl
+COPY --from=docker.io/bitnami/kubectl:1.26.15 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl
 
 COPY --from=builder /venv /venv
 

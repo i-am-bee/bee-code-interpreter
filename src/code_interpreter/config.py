@@ -40,7 +40,7 @@ class Config(BaseSettings):
     kubernetes_namespace: str | None = None
 
     # the image to use for the executor pods
-    executor_image: str = "bee-code-interpreter-executor:local"
+    executor_image: str = "localhost/bee-code-interpreter-executor:local"
 
     # maximum time in seconds an executor pod can be idle before being deleted
     executor_max_idle_time: int = 3600
