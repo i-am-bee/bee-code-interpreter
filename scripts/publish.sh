@@ -20,7 +20,7 @@ CODE_EXECUTOR_NAME="bee-code-executor"
 CODE_INTERPRETER_NAME="bee-code-interpreter"
 PLATFORMS="linux/amd64,linux/arm64"
 
-VERSION=${1:-$(awk -F '"' '/version/ {print $2}' pyproject.toml)}
+VERSION=$(poetry version --short)
 if [ -n "$VERSION" ]; then
   echo "Version: $VERSION"
 else
