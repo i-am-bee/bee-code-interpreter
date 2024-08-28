@@ -40,4 +40,5 @@ args = [{ name = "version", positional = true, required = true, multiple = false
 sequence = [{ cmd = "poetry version ${version}" }, { shell = "./scripts/copyright.sh" }, { shell = "./scripts/publish.sh" }]
 
 [tool.poe.tasks.test]
-shell = "APP_FILE_STORAGE_PATH=${APP_FILE_STORAGE_PATH:-./.tmp/files} pytest -v test"
+help = "Verify executor is running + run tests"
+sequence = [{ cmd = "python -m code_interpreter.health_check" }, { shell = "APP_FILE_STORAGE_PATH=${APP_FILE_STORAGE_PATH:-./.tmp/files} pytest -v test" } ]
