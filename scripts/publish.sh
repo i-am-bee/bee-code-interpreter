@@ -32,11 +32,13 @@ echo "Building code interpreter"
 docker build --progress=plain --platform "$PLATFORMS" --manifest "$CODE_INTERPRETER_NAME" .
 docker image tag "$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:latest"
 docker image tag "$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:$VERSION"
-docker manifest push "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME"
+docker manifest push "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:latest"
+docker manifest push "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:$VERSION"
 
 echo "Building code executor"
 cd "executor"
 docker build --progress=plain --platform "$PLATFORMS" --manifest "$CODE_EXECUTOR_NAME" .
 docker image tag "$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:latest"
 docker image tag "$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:$VERSION"
-docker manifest push "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME"
+docker manifest push "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:latest"
+docker manifest push "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:$VERSION"
