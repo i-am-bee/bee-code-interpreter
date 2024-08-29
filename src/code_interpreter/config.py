@@ -22,7 +22,7 @@ class Config(BaseSettings):
     log_level: str = "DEBUG"
 
     # the address and port gRPC server will listen on
-    grpc_listen_addr: str = "127.0.0.1:50051"
+    grpc_listen_addr: str = "0.0.0.0:50051"
 
     # text content of the TLS certificate file
     grpc_tls_cert: bytes | None = None

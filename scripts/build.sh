@@ -37,7 +37,7 @@ IMAGE_NAME="${APP_EXECUTOR_IMAGE:-localhost/bee-code-interpreter-executor:local}
 echo "Building image"
 docker build --progress=plain -t "$IMAGE_NAME" executor
 
-IMAGE_HASH=$(docker inspect --format='{{index .Id}}' "$IMAGE_NAME")
+IMAGE_HASH=$(docker inspect --format='{{.Id}}' "$IMAGE_NAME")
 IMAGE_FILENAME="$IMAGE_HASH.tar"
 IMAGE_OUTPUT_PATH="$IMAGES_DIR/$IMAGE_FILENAME"
 

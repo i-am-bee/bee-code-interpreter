@@ -24,7 +24,7 @@ class GrpcServer:
         self.server_credentials = server_credentials
         self._register_servicers(servicers)
 
-    async def start(self, listen_addr: str = "[::]:50051") -> None:
+    async def start(self, listen_addr: str) -> None:
         if self.server_credentials is None:
             logging.info("Starting server on insecure port %s", listen_addr)
             self.server.add_insecure_port(listen_addr)
