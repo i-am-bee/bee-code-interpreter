@@ -29,16 +29,14 @@ else
 fi
 
 echo "Building code interpreter"
-docker build --progress=plain --platform "$PLATFORMS" --manifest "$CODE_INTERPRETER_NAME" .
-docker image tag "$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:latest"
-docker image tag "$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:$VERSION"
-docker manifest push "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:latest"
-docker manifest push "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:$VERSION"
+docker manifest rm "$USER/$CODE_INTERPRETER_NAME" 2>/dev/null || true
+docker build --progress=plain --platform "$PLATFORMS" --manifest "$USER/$CODE_INTERPRETER_NAME" .
+docker manifest push "$USER/$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:latest" --all
+docker manifest push "$USER/$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:$VERSION" --all
 
 echo "Building code executor"
 cd "executor"
-docker build --progress=plain --platform "$PLATFORMS" --manifest "$CODE_EXECUTOR_NAME" .
-docker image tag "$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:latest"
-docker image tag "$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:$VERSION"
-docker manifest push "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:latest"
-docker manifest push "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:$VERSION"
+docker manifest rm "$USER/$CODE_EXECUTOR_NAME" 2>/dev/null || true
+docker build --progress=plain --platform "$PLATFORMS" --manifest "$USER/$CODE_EXECUTOR_NAME" .
+docker manifest push "$USER/$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:latest" --all
+docker manifest push "$USER/$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:$VERSION" --all
