@@ -12,6 +12,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 set -e
 
-nwa add -l apache -c "IBM Corp." scripts executor ci test src examples
+# Check if 'nwa' command is not available and 'go' is available, then install 'nwa'
+if ! command -v nwa &> /dev/null && command -v go &> /dev/null; then
+  echo "Installing 'nwa' via 'go' (https://github.com/B1NARY-GR0UP/nwa)"
+  go install github.com/B1NARY-GR0UP/nwa@latest
+  # Ensure the GOPATH is added to the PATH environment variable
+  export PATH=$PATH:$(go env GOPATH)/bin
+fi
+
+if command -v nwa &> /dev/null; then
+  nwa add -l apache -c "IBM Corp." scripts executor ci test src examples
+elif command -v docker &> /dev/null; then
+  docker run -it -v "${PWD}:/src" ghcr.io/b1nary-gr0up/nwa:main add -l apache -c "IBM Corp." scripts executor ci test src examples
+else
+  echo "Error: 'nwa' is not available. Either install it manually or install go/docker."
+  exit 1
+fi
