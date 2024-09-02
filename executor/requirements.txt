@@ -14,6 +14,8 @@
 # *scikit-learn
 # *xgboost
 keras
+
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
 
 # Natural Language Processing:
@@ -27,10 +29,6 @@ textblob
 # *seaborn
 # *plotly
 bokeh
-
-# Deep Learning:
-keras
-torch
 
 # Image Processing:
 # *pillow
