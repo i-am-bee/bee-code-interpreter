@@ -27,13 +27,6 @@ Pre-requisites:
 
 This project contains submodules. Be sure to clone it with `git clone --recurse-submodules`, or initialize the submodules later with `git submodule update --init`.
 
-### Prepare environment
-
-```shell
-python -m venv .venv
-source .venv/bin/activate  # On Windows, use .venv\Scripts\activate
-```
-
 ### Install dependencies
 
 ```shell
