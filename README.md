@@ -22,6 +22,8 @@ Pre-requisites:
 - `docker` (we recommend using [Rancher Desktop](https://rancherdesktop.io/))
 - `grpcurl` (optional -- for testing)
 - `python` 3.12+
+- `poetry`
+- `poethepoet`
 
 ### Clone this repo
 
