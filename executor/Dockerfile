@@ -84,11 +84,12 @@ COPY --from=build-upm /go/bin/upm /usr/local/bin/upm
 COPY --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
 ENV PYPI_MAP_DB=/pypi_map.sqlite
 
-RUN mkdir /workspace && chown -R ubuntu /workspace
+RUN mkdir /workspace && chmod 777 /workspace
 
 WORKDIR /workspace
 
-USER ubuntu
+# Use an arbitrary UID
+USER 1001050000
 
 ENV PATH="/venv/bin:$PATH"
 

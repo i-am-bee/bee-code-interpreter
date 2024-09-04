@@ -55,7 +55,7 @@ class Config(BaseSettings):
     executor_pod_spec_extra: dict = {}
 
     # folders to manage in executor pods by saving and restoring them
-    executor_managed_folders: list[str] = ["/home/ubuntu", "/workspace"]
+    executor_managed_folders: list[str] = ["/workspace"]
 
     # path to store files
-    file_storage_path: str = "/tmp/code-interpreter/files"
+    file_storage_path: str = "./.tmp/files"

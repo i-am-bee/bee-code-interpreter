@@ -38,7 +38,24 @@ def config():
 
 @pytest.fixture
 def grpc_stub(config: Config):
-    return CodeInterpreterServiceStub(grpc.insecure_channel(config.grpc_listen_addr))
+    if (
+        not config.grpc_tls_cert
+        or not config.grpc_tls_cert_key
+        or not config.grpc_tls_ca_cert
+    ):
+        channel = grpc.insecure_channel(config.grpc_listen_addr)
+    else:
+        channel = grpc.secure_channel(
+            config.grpc_listen_addr,
+            grpc.ssl_server_credentials(
+                private_key_certificate_chain_pairs=[
+                    (config.grpc_tls_cert_key, config.grpc_tls_cert)
+                ],
+                root_certificates=config.grpc_tls_ca_cert,
+            ),
+        )
+
+    return CodeInterpreterServiceStub(channel)
 
 
 @pytest.fixture(autouse=True)

@@ -13,19 +13,37 @@
 # limitations under the License.
 
 from code_interpreter.config import Config
+import grpc
+from proto.code_interpreter.v1.code_interpreter_service_pb2 import (
+    ExecuteRequest,
+)
+from proto.code_interpreter.v1.code_interpreter_service_pb2_grpc import (
+    CodeInterpreterServiceStub,
+)
 
 
 def health_check():
-    import grpc
-    from proto.code_interpreter.v1.code_interpreter_service_pb2 import (
-        ExecuteRequest,
-    )
-    from proto.code_interpreter.v1.code_interpreter_service_pb2_grpc import (
-        CodeInterpreterServiceStub,
-    )
+    config = Config()
+
+    if (
+        not config.grpc_tls_cert
+        or not config.grpc_tls_cert_key
+        or not config.grpc_tls_ca_cert
+    ):
+        channel = grpc.insecure_channel(config.grpc_listen_addr)
+    else:
+        channel = grpc.secure_channel(
+            config.grpc_listen_addr,
+            grpc.ssl_server_credentials(
+                private_key_certificate_chain_pairs=[
+                    (config.grpc_tls_cert_key, config.grpc_tls_cert)
+                ],
+                root_certificates=config.grpc_tls_ca_cert,
+            ),
+        )
 
     assert (
-        CodeInterpreterServiceStub(grpc.insecure_channel(Config().grpc_listen_addr))
+        CodeInterpreterServiceStub(channel)
         .Execute(
             ExecuteRequest(executor_id="health-check", source_code="print(21 * 2)"),
             timeout=9999,  # no need to timeout here -- k8s health checks have their own timeouts
