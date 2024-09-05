@@ -33,45 +33,15 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     && apt update \
     && apt install -y --no-install-recommends \
     python3 \
-    python3-absl \
-    python3-audioread \
-    python3-contourpy \
-    python3-filelock \
-    python3-gensim \
-    python3-h5py \
-    python3-imageio \
-    python3-joblib \
-    python3-lazy-loader \
-    python3-llvmlite \
-    python3-markdown-it \
     python3-matplotlib \
-    python3-mdurl \
-    python3-networkx \
-    python3-nltk \
     python3-numpy \
-    python3-opencv \
-    python3-openpyxl \
     python3-pandas \
     python3-pillow \
     python3-pip \
     python3-plotly \
-    python3-pooch \
-    python3-pyaudio \
-    python3-pypdf2 \
-    python3-pytest \
-    python3-python-docx \
-    python3-rich \
     python3-scipy \
-    python3-seaborn \
     python3-sklearn \
-    python3-soundfile \
-    python3-tifffile \
-    python3-tz \
-    python3-venv \
-    python3-xarray \
-    python3-xgboost \
-    python3-xlrd \
-    python3-xyzservices
+    python3-venv
 
 COPY requirements.txt /
 
