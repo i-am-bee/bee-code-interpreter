@@ -1,5 +1,4 @@
-# * = installed as APT packages
-# ! = not compatible with Python 3.12 at the moment
+# * = installed as OS packages
 
 # Data Analysis and Manipulation:
 # *pandas

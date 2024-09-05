@@ -12,41 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION="1.22.5"
-ARG UPM_VERSION="2.3.0"
+ARG GO_VERSION="1.23.0"
+ARG UPM_VERSION="2.5.0"
+ARG ALPINE_VERSION="3.20"
 
-FROM docker.io/golang:${GO_VERSION} AS build-upm
+FROM docker.io/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build-upm
 
 ARG UPM_VERSION
 
 WORKDIR /workdir
 
-RUN git clone --depth 1 --branch "v${UPM_VERSION}" https://github.com/replit/upm.git  && \
+RUN apk add --no-cache git make gcc g++ musl-dev && \
+    git clone --depth 1 --branch "v${UPM_VERSION}" https://github.com/replit/upm.git  && \
     cd ./upm && \
+    export CGO_CFLAGS="-D_LARGEFILE64_SOURCE" && \
     make install
 
-FROM ubuntu:24.04 AS runtime
+FROM docker.io/alpine:${ALPINE_VERSION} AS runtime
 
-RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
-    --mount=target=/var/cache/apt,type=cache,sharing=locked \
-    rm -f /etc/apt/apt.conf.d/docker-clean \
-    && apt update \
-    && apt install -y --no-install-recommends \
+RUN apk add --no-cache \
+    coreutils \
     python3 \
-    python3-matplotlib \
-    python3-numpy \
-    python3-pandas \
-    python3-pillow \
-    python3-pip \
-    python3-plotly \
-    python3-scipy \
-    python3-sklearn \
-    python3-venv
+    py3-matplotlib \
+    py3-numpy \
+    py3-pandas \
+    py3-pillow \
+    py3-pip \
+    py3-scipy \
+    py3-scikit-learn
 
 COPY requirements.txt /
 
-RUN --mount=target=/root/.cache/pip,type=cache,sharing=locked \
-    python3 -m venv --system-site-packages /venv && /venv/bin/pip install -r /requirements.txt
+RUN python3 -m venv --system-site-packages /venv && \
+    /venv/bin/pip install --no-cache-dir -r /requirements.txt
 
 COPY execute /
 
@@ -58,7 +56,7 @@ RUN mkdir /workspace && chmod 777 /workspace
 
 WORKDIR /workspace
 
-# Use an arbitrary UID
+# Use an arbitrary UID
 USER 1001050000
 
 ENV PATH="/venv/bin:$PATH"

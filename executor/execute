@@ -1,5 +1,4 @@
-#!/bin/bash
-shopt -s dotglob
+#!/bin/sh
 
 SOURCE_CODE_TMP_DIR=$(mktemp -d)
 
@@ -16,6 +15,6 @@ fi
 timeout ${APP_EXECUTION_TIMEOUT:-60} python <$SOURCE_CODE_TMP_DIR/script.py
 RETVAL=$?
 
-rm -rf /tmp/*
+find /tmp -mindepth 1 -delete
 
 exit $RETVAL
