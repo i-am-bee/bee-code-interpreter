@@ -78,6 +78,15 @@ def test_imports(grpc_stub: CodeInterpreterServiceStub):
     assert "P-Value" in response.stdout, "P-Value not found in the output"
 
 
+def test_ad_hoc_import(grpc_stub: CodeInterpreterServiceStub):
+    request = ExecuteRequest(
+        executor_id="test",
+        source_code=Path("./examples/cowsay.py").read_text(),
+    )
+    response = grpc_stub.Execute(request, timeout=60)
+    assert "Hello World" in response.stdout, "Hello World not found in the output"
+
+
 def test_create_file_in_interpreter(
     grpc_stub: CodeInterpreterServiceStub, config: Config
 ):
