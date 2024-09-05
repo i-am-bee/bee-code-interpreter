@@ -2,17 +2,18 @@
 shopt -s dotglob
 
 SOURCE_CODE_TMP_DIR=$(mktemp -d)
-PIP_TMP_DIR=$(mktemp -d)
 
 cat >$SOURCE_CODE_TMP_DIR/script.py
 
 GUESSED_DEPENDENCIES=$(cd $SOURCE_CODE_TMP_DIR && upm guess 2>/dev/null)
 
 if [ ! -z "$GUESSED_DEPENDENCIES" ]; then
-    PYTHONUSERBASE=$PIP_TMP_DIR pip install --no-cache-dir $GUESSED_DEPENDENCIES >/dev/null 2>/dev/null
+    PIP_TMP_DIR=$(mktemp -d)
+    PYTHONUSERBASE=$PIP_TMP_DIR pip install --user --no-cache-dir $GUESSED_DEPENDENCIES >/dev/null 2>/dev/null
+    export PYTHONPATH=$(realpath $PIP_TMP_DIR/lib/**/site-packages)
 fi
 
-PYTHONPATH=$PIP_TMP_DIR:$PYTHONPATH timeout ${APP_EXECUTION_TIMEOUT:-60} python <$SOURCE_CODE_TMP_DIR/script.py
+timeout ${APP_EXECUTION_TIMEOUT:-60} python <$SOURCE_CODE_TMP_DIR/script.py
 RETVAL=$?
 
 rm -rf /tmp/*
