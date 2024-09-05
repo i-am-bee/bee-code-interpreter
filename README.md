@@ -17,13 +17,16 @@ Built from the ground up to be safe and reproducible.
 
 ## 🪑 Local set-up
 
+> [!NOTE]
+> We have a [docker compose file](https://github.com/i-am-bee/bee-agent-framework/blob/main/docker-compose.yml) that is recommended if you only want to run bee-code-interpreter locally. Read on only if you wish to modify the code.
+
 Pre-requisites:
 - `git`
-- `docker` (we recommend using [Rancher Desktop](https://rancherdesktop.io/))
-- `grpcurl` (optional -- for testing)
 - `python` 3.12+
 - `poetry`
 - `poethepoet`
+- `docker` and `kubectl` (we recommend using [Rancher Desktop](https://rancherdesktop.io/))
+- `grpcurl` (optional -- for testing)
 
 ### Clone this repo
 
@@ -37,27 +40,31 @@ poetry install
 
 ### 🚀 Run
 
-Run the server using:
+First, prepare your Kubernetes cluster / namespace that will be used for running executors. If using a shared cluster, ensure that your user has all permissions for `pods` and `pods/exec` in this namespace. For local development, we recommend using the local cluster feature of [Rancher Desktop](https://rancherdesktop.io/).
+
+Ensure that the cluster can access the executor image. For Rancher Desktop, it is enough to build it, which will make it available in the cluster:
 
 ```bash
-poe compose-up
+docker build -t localhost/bee-code-interpreter-executor:local executor
 ```
 
-🎉 Bee Code Interpreter should now be running in the background! You can test it using `grpcurl`:
+Finally, start the bee-code-interpreter service by running:
+
+```bash
+poe run
+```
+
+🎉 Bee Code Interpreter should now be running! You can test it using `grpcurl` from another terminal:
 
 ```bash
 grpcurl -d '{"executor_id":"1","source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
 ```
 
-Stop the server using:
-
-```bash
-poe compose-down
-```
 
 ### 🧪 Test
 
->⚠️ Server must be up and running prior.
+> [!WARNING]
+> This project is using end-to-end tests that require a running instance to be executed against. Before running tests, ensure that you have the service (`poe run`) running in another terminal. 
 
 ```bash
 poe test

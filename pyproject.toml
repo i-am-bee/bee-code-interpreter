@@ -28,8 +28,14 @@ poethepoet = "^0.27.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poe.tasks.compose-up]
-sequence = [{ shell = "./scripts/build.sh" }, { shell = "docker compose up -d" }]
+[tool.poe.tasks.run]
+cmd = "python -m code_interpreter"
+
+[tool.poe.tasks.health_check]
+cmd = "python -m code_interpreter.health_check"
+
+[tool.poe.tasks.kubernetes_check]
+cmd = "python -m code_interpreter.kubernetes_check"
 
 [tool.poe.tasks.compose-down]
 sequence = [{ shell = "docker compose down --volumes" }]
