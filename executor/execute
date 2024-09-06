@@ -2,7 +2,7 @@
 
 SOURCE_CODE_TMP_DIR=$(mktemp -d)
 
-cat >$SOURCE_CODE_TMP_DIR/script.py
+mv /tmp/script.py $SOURCE_CODE_TMP_DIR/script.py
 
 GUESSED_DEPENDENCIES=$(cd $SOURCE_CODE_TMP_DIR && upm guess 2>/dev/null)
 

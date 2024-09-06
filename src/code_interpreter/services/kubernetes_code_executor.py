@@ -89,17 +89,15 @@ class KubernetesCodeExecutor:
         """
         async with self._executor_pod(executor_id) as executor_pod_name:
             await self.pod_filesystem_state_manager.restore(executor_pod_name, files)
+            await self.pod_filesystem_state_manager.pod_file_manager.write(
+                source_code.encode(), executor_pod_name, "/tmp/script.py"
+            )
+
             process = await self.kubectl.exec_raw(
                 executor_pod_name,
                 "--",
                 "/execute",
-                stdin=True,
             )
-            if process.stdin is None:
-                raise RuntimeError("Error opening stdin for kubectl exec")
-            process.stdin.write(source_code.encode())
-            await process.stdin.drain()
-            process.stdin.close()
             stdout, stderr = await process.communicate()
             new_files = await self.pod_filesystem_state_manager.commit(
                 executor_pod_name
