@@ -24,9 +24,9 @@ if ! command -v nwa &> /dev/null && command -v go &> /dev/null; then
 fi
 
 if command -v nwa &> /dev/null; then
-  nwa add -l apache -c "IBM Corp." scripts executor ci test src examples
+  nwa add -l apache -c "IBM Corp." scripts executor test src examples
 elif command -v docker &> /dev/null; then
-  docker run -it -v "${PWD}:/src" ghcr.io/b1nary-gr0up/nwa:main add -l apache -c "IBM Corp." scripts executor ci test src examples
+  docker run -it -v "${PWD}:/src" ghcr.io/b1nary-gr0up/nwa:main add -l apache -c "IBM Corp." scripts executor test src examples
 else
   echo "Error: 'nwa' is not available. Either install it manually or install go/docker."
   exit 1
