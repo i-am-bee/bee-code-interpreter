@@ -9,7 +9,7 @@ GUESSED_DEPENDENCIES=$(cd $SOURCE_CODE_TMP_DIR && upm guess 2>/dev/null)
 if [ ! -z "$GUESSED_DEPENDENCIES" ]; then
     PIP_TMP_DIR=$(mktemp -d)
     PYTHONUSERBASE=$PIP_TMP_DIR pip install --user --no-cache-dir $GUESSED_DEPENDENCIES >/dev/null 2>/dev/null
-    export PYTHONPATH=$(realpath $PIP_TMP_DIR/lib/**/site-packages)
+    export PYTHONPATH=$(realpath $PIP_TMP_DIR/lib/**/site-packages 2>/dev/null)
 fi
 
 timeout ${APP_EXECUTION_TIMEOUT:-60} python <$SOURCE_CODE_TMP_DIR/script.py
