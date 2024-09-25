@@ -13,7 +13,7 @@ A gRPC service intended as a backend for an LLM that can run arbitrary pieces of
 
 Built from the ground up to be safe and reproducible.
 
-> [!NOTICE]
+> [!NOTE]
 > This project contains submodules. Be sure to clone it with `git clone --recurse-submodules`, or initialize the submodules later with `git submodule update --init`.
 
 ---
