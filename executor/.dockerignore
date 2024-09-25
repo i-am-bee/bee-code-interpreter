@@ -1,5 +1,4 @@
 *
-!requirements.txt
 !Cargo.lock
 !Cargo.toml
 !server.rs
