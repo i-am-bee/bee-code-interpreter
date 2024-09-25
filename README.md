@@ -63,10 +63,13 @@ For a production setup, ensure that you have the following:
 
 ## 🧑‍💻 Development
 
-#### Set up:
+#### Install dependencies:
 
-- Ensure that you have `python3.12`, `poetry` and `poethepoet` available on your system.
-- Install the project with `poetry install`.
+Use [mise-en-place](https://mise.jdx.dev/) to install dependencies: `mise install`.
+
+If you don't want to use `mise`, look into the file `.mise.toml` and install the listed dependencies however you see fit.
+
+Afterwards, install the project dependencies using `poetry install`.
 
 #### Run end-to-end tests:
 
