@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bee-code-interpreter"
-version = "0.0.6"
+version = "0.1.0"
 license = "Apache-2.0"
 description = ""
 authors = [ "Jan Pokorný <jan.pokorny@ibm.com>", "Tomáš Dvořák <tomas.dvorak@ibm.com>" ]
@@ -9,47 +9,44 @@ packages = [ { include = "code_interpreter", from = "src" }, { include = "proto"
 [tool.poetry.dependencies]
 python = "^3.12"
 
-aiorun = "^2024.5.1"
-anyio = "^4.4.0"
-apscheduler = "^3.10.4"
+aiorun = "^2024.8.1"
+anyio = "^4.6.0"
 frozendict = "^2.4.4"
-grpcio = "^1.64.1"
-grpcio-reflection = "^1.64.1"
-protovalidate = "^0.3.1"
-pydantic = "^2.7.3"
-pydantic-settings = "^2.3.0"
-tenacity = "^8.3.0"
+grpcio = "^1.66.1"
+grpcio-reflection = "^1.66.1"
+protovalidate = "^0.4.0"
+pydantic = "^2.9.2"
+pydantic-settings = "^2.5.2"
+tenacity = "^9.0.0"
+httpx = "^0.27.2"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
-poethepoet = "^0.27.0"
+pytest = "^8.3.3"
+poethepoet = "^0.29.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks.run]
-cmd = "python -m code_interpreter"
+shell = "./scripts/run.sh"
 
 [tool.poe.tasks.health_check]
 cmd = "python -m code_interpreter.health_check"
 
-[tool.poe.tasks.kubernetes_check]
-cmd = "python -m code_interpreter.kubernetes_check"
-
-[tool.poe.tasks.compose-down]
-sequence = [{ shell = "docker compose down --volumes" }]
+[tool.poe.tasks.copyright]
+cmd = "nwa add -l apache -c \"IBM Corp.\" scripts executor/{server.rs,Dockerfile} test src examples"
 
 [tool.poe.tasks.publish]
 help = "Bump version + build and publish docker images"
 args = [{ name = "version", positional = true, required = true, multiple = false }]
 sequence = [
     { cmd = "poetry version ${version}" },
-    { shell = "./scripts/copyright.sh" },
+    { ref = "copyright" },
     { shell = "./scripts/publish.sh" },
     { shell = "git add . && git commit -m \"Release v${version}\" && git tag \"v${version}\" && git push origin \"v${version}\" && git push"}
 ]
 
 [tool.poe.tasks.test]
 help = "Verify executor is running + run tests"
-sequence = [{ cmd = "python -m code_interpreter.health_check" }, { shell = "APP_FILE_STORAGE_PATH=${APP_FILE_STORAGE_PATH:-./.tmp/files} pytest -v test" } ]
+sequence = [{ cmd = "python -m code_interpreter.health_check" }, { shell = "pytest -v test" } ]

@@ -26,20 +26,14 @@ from google.protobuf.message import Message
 import proto.code_interpreter.v1.code_interpreter_service_pb2 as code_interpreter_pb2
 import proto.code_interpreter.v1.code_interpreter_service_pb2_grpc as code_interpreter_pb2_grpc
 
-from code_interpreter.services.pod_filesystem_state_manager import (
-    PodFilesystemStateManager,
-)
-
 
 class CodeInterpreterServicer(code_interpreter_pb2_grpc.CodeInterpreterServiceServicer):
     def __init__(
         self,
         code_executor: KubernetesCodeExecutor,
-        pod_filesystem_state_manager: PodFilesystemStateManager,
         custom_tool_executor: CustomToolExecutor,
     ):
         self.code_executor = code_executor
-        self.pod_filesystem_state_manager = pod_filesystem_state_manager
         self.custom_tool_executor = custom_tool_executor
 
     async def _validate_request(
@@ -58,7 +52,6 @@ class CodeInterpreterServicer(code_interpreter_pb2_grpc.CodeInterpreterServiceSe
         await self._validate_request(request, context)
 
         result = await self.code_executor.execute(
-            executor_id=request.executor_id,
             source_code=request.source_code,
             files=request.files,
         )
@@ -102,7 +95,6 @@ class CodeInterpreterServicer(code_interpreter_pb2_grpc.CodeInterpreterServiceSe
 
         try:
             result = await self.custom_tool_executor.execute(
-                executor_id=request.executor_id,
                 tool_input=json.loads(request.tool_input_json),
                 tool_source_code=request.tool_source_code,
             )

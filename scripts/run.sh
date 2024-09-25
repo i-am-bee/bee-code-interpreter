@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2024 IBM Corp.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,12 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import Annotated, TypeAliasType
-
-from pydantic import Field
-
-Hash = TypeAliasType("Hash", Annotated[str, Field(pattern=r"^[0-9a-zA-Z_-]{1,255}$")])
-AbsolutePath = TypeAliasType(
-    "AbsolutePath", Annotated[str, Field(pattern=r"^/[^/].*$")]
-)
+set -e
+docker build -t localhost/bee-code-interpreter:local .
+docker build -t localhost/bee-code-interpreter-executor:local executor
+kubectl delete -f k8s/local.yaml || true
+kubectl apply -f k8s/local.yaml
+kubectl wait --for=condition=Ready pod/code-interpreter-service
+kubectl port-forward pods/code-interpreter-service 50051:50051 &
+kubectl logs --follow code-interpreter-service
+wait

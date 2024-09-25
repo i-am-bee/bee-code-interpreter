@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import logging
 from functools import cached_property
 
@@ -19,16 +20,12 @@ import os
 import grpc
 from code_interpreter.config import Config
 from code_interpreter.services.custom_tool_executor import CustomToolExecutor
-from code_interpreter.services.pod_filesystem_state_manager import (
-    PodFilesystemStateManager,
-)
 from code_interpreter.services.grpc_server import GrpcServer
 from code_interpreter.services.grpc_servicers.code_interpreter_servicer import (
     CodeInterpreterServicer,
 )
 from code_interpreter.services.kubectl import Kubectl
 from code_interpreter.services.kubernetes_code_executor import KubernetesCodeExecutor
-from code_interpreter.services.pod_file_manager import PodFileManager
 from code_interpreter.services.storage import Storage
 
 
@@ -42,10 +39,7 @@ class ApplicationContext:
 
     @cached_property
     def kubectl(self) -> Kubectl:
-        return Kubectl(
-            context=self.config.kubernetes_context,
-            namespace=self.config.kubernetes_namespace,
-        )
+        return Kubectl()
 
     @cached_property
     def file_storage(self) -> Storage:
@@ -53,27 +47,17 @@ class ApplicationContext:
         return Storage(storage_path=self.config.file_storage_path)
 
     @cached_property
-    def pod_file_manager(self) -> PodFileManager:
-        return PodFileManager(kubectl=self.kubectl)
-
-    @cached_property
-    def pod_filesystem_state_manager(self) -> PodFilesystemStateManager:
-        return PodFilesystemStateManager(
-            kubectl=self.kubectl,
-            pod_file_manager=self.pod_file_manager,
-            file_storage=self.file_storage,
-            managed_folders=self.config.executor_managed_folders,
-        )
-
-    @cached_property
     def code_executor(self) -> KubernetesCodeExecutor:
-        return KubernetesCodeExecutor(
+        code_executor = KubernetesCodeExecutor(
             kubectl=self.kubectl,
             executor_image=self.config.executor_image,
             container_resources=self.config.executor_container_resources,
-            pod_filesystem_state_manager=self.pod_filesystem_state_manager,
+            file_storage=self.file_storage,
             executor_pod_spec_extra=self.config.executor_pod_spec_extra,
+            executor_pod_queue_target_length=self.config.executor_pod_queue_target_length,
         )
+        asyncio.create_task(code_executor.fill_executor_pod_queue())
+        return code_executor
 
     @cached_property
     def custom_tool_executor(self) -> CustomToolExecutor:
@@ -86,7 +70,6 @@ class ApplicationContext:
         return [
             CodeInterpreterServicer(
                 code_executor=self.code_executor,
-                pod_filesystem_state_manager=self.pod_filesystem_state_manager,
                 custom_tool_executor=self.custom_tool_executor,
             )
         ]

@@ -106,43 +106,6 @@ with open('file.txt', 'w') as f:
     assert response.exit_code == 0
     assert response.files["/workspace/file.txt"] == file_hash
 
-    assert (
-        read_file(response.files["/workspace/file.txt"], config.file_storage_path)
-        == file_content.encode()
-    )
-
-
-def test_create_file_in_interpreter_and_read_in_next_execution(
-    grpc_stub: CodeInterpreterServiceStub,
-):
-    file_content = "Hello, World!"
-
-    response: ExecuteResponse = grpc_stub.Execute(
-        ExecuteRequest(
-            executor_id="test",
-            source_code=f"""
-with open('file.txt', 'w') as f:
-    f.write("{file_content}")
-""",
-        )
-    )
-
-    assert response.exit_code == 0
-
-    response = grpc_stub.Execute(
-        ExecuteRequest(
-            executor_id="test",
-            files=response.files,
-            source_code="""
-with open('file.txt', 'r') as f:
-    print(f.read(), end='')
-""",
-        )
-    )
-
-    assert response.exit_code == 0
-    assert response.stdout == file_content
-
 
 def test_parse_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):
     response: ParseCustomToolResponse = grpc_stub.ParseCustomTool(

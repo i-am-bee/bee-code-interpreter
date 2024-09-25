@@ -23,7 +23,6 @@ import textwrap
 from pydantic import validate_call
 
 from code_interpreter.services.kubernetes_code_executor import KubernetesCodeExecutor
-from code_interpreter.utils.validation import ExecutorId
 
 
 @dataclass
@@ -157,7 +156,6 @@ class CustomToolExecutor:
     @validate_call
     async def execute(
         self,
-        executor_id: ExecutorId,
         tool_source_code: str,
         tool_input: dict[str, typing.Any],
     ) -> typing.Any:
@@ -169,7 +167,6 @@ class CustomToolExecutor:
         """
 
         result = await self.code_executor.execute(
-            executor_id=executor_id,
             source_code=f"""
 import contextlib
 import json
