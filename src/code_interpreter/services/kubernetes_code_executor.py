@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import os
 import httpx
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -60,6 +61,7 @@ class KubernetesCodeExecutor:
         self.container_resources = container_resources
         self.file_storage = file_storage
         self.executor_pod_spec_extra = executor_pod_spec_extra
+        self.self_pod = None
 
     @retry(
         retry=retry_if_exception_type(RuntimeError),
@@ -128,6 +130,9 @@ class KubernetesCodeExecutor:
     async def _executor_pod(
         self, executor_id: ExecutorId
     ) -> AsyncGenerator[dict, None]:
+        if self.self_pod is None:
+            self.self_pod = await self.kubectl.get("pod", os.environ["HOSTNAME"])
+
         executor_pods = await self.kubectl.get(
             "pods",
             selector=f"app=code-interpreter-executor,executor_id={executor_id}",
@@ -154,6 +159,16 @@ class KubernetesCodeExecutor:
                         "app": "code-interpreter-executor",
                         "executor_id": executor_id,
                     },
+                    "ownerReferences": [
+                        {
+                            "apiVersion": "v1",
+                            "kind": "Pod",
+                            "name": self.self_pod["metadata"]["name"],
+                            "uid": self.self_pod["metadata"]["uid"],
+                            "controller": True,
+                            "blockOwnerDeletion": False,
+                        }
+                    ],
                 },
                 "spec": {
                     "containers": [
@@ -174,5 +189,4 @@ class KubernetesCodeExecutor:
         try:
             yield pod
         finally:
-            pass
-            # asyncio.create_task(self.kubectl.delete("pod", executor_pod_name))
+            asyncio.create_task(self.kubectl.delete("pod", executor_pod_name))
