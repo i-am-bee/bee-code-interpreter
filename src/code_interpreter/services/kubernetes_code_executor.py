@@ -198,7 +198,7 @@ class KubernetesCodeExecutor:
     @asynccontextmanager
     async def executor_pod(self) -> AsyncGenerator[dict, None]:
         pod = (
-            self.executor_pod_queue.pop()
+            self.executor_pod_queue.popleft()
             if self.executor_pod_queue
             else await self.spawn_executor_pod()
         )
