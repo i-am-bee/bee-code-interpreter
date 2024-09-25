@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bee-code-interpreter"
-version = "0.0.6"
+version = "0.1.0"
 license = "Apache-2.0"
 description = ""
 authors = [ "Jan Pokorný <jan.pokorny@ibm.com>", "Tomáš Dvořák <tomas.dvorak@ibm.com>" ]
@@ -9,20 +9,20 @@ packages = [ { include = "code_interpreter", from = "src" }, { include = "proto"
 [tool.poetry.dependencies]
 python = "^3.12"
 
-aiorun = "^2024.5.1"
-anyio = "^4.4.0"
+aiorun = "^2024.8.1"
+anyio = "^4.6.0"
 frozendict = "^2.4.4"
-grpcio = "^1.64.1"
-grpcio-reflection = "^1.64.1"
-protovalidate = "^0.3.1"
-pydantic = "^2.7.3"
-pydantic-settings = "^2.3.0"
-tenacity = "^8.3.0"
+grpcio = "^1.66.1"
+grpcio-reflection = "^1.66.1"
+protovalidate = "^0.4.0"
+pydantic = "^2.9.2"
+pydantic-settings = "^2.5.2"
+tenacity = "^9.0.0"
 httpx = "^0.27.2"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
-poethepoet = "^0.27.0"
+pytest = "^8.3.3"
+poethepoet = "^0.29.0"
 
 [build-system]
 requires = ["poetry-core"]
