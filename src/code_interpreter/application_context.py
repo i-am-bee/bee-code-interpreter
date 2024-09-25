@@ -19,16 +19,12 @@ import os
 import grpc
 from code_interpreter.config import Config
 from code_interpreter.services.custom_tool_executor import CustomToolExecutor
-from code_interpreter.services.pod_filesystem_state_manager import (
-    PodFilesystemStateManager,
-)
 from code_interpreter.services.grpc_server import GrpcServer
 from code_interpreter.services.grpc_servicers.code_interpreter_servicer import (
     CodeInterpreterServicer,
 )
 from code_interpreter.services.kubectl import Kubectl
 from code_interpreter.services.kubernetes_code_executor import KubernetesCodeExecutor
-from code_interpreter.services.pod_file_manager import PodFileManager
 from code_interpreter.services.storage import Storage
 
 
@@ -51,19 +47,6 @@ class ApplicationContext:
     def file_storage(self) -> Storage:
         os.makedirs(self.config.file_storage_path, exist_ok=True)
         return Storage(storage_path=self.config.file_storage_path)
-
-    @cached_property
-    def pod_file_manager(self) -> PodFileManager:
-        return PodFileManager(kubectl=self.kubectl)
-
-    @cached_property
-    def pod_filesystem_state_manager(self) -> PodFilesystemStateManager:
-        return PodFilesystemStateManager(
-            kubectl=self.kubectl,
-            pod_file_manager=self.pod_file_manager,
-            file_storage=self.file_storage,
-            managed_folders=self.config.executor_managed_folders,
-        )
 
     @cached_property
     def code_executor(self) -> KubernetesCodeExecutor:

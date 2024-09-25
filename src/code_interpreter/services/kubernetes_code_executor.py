@@ -87,9 +87,9 @@ class KubernetesCodeExecutor:
         The `executor_id` serves to differentiate between users, as only pods with matching `executor_id` will ever be re-used.
         This is mainly a "just to be sure" security mechanism in case users find a way to tamper with the pods.
         """
-        async with self._executor_pod(
-            executor_id
-        ) as executor_pod, httpx.AsyncClient() as client:
+        async with self._executor_pod(executor_id) as executor_pod, httpx.AsyncClient(
+            timeout=60.0
+        ) as client:
             executor_pod_ip = executor_pod["status"]["podIP"]
 
             async def upload_file(file_path, file_hash):
@@ -115,15 +115,33 @@ class KubernetesCodeExecutor:
                 )
             ).json()
 
+            changed_files = {
+                file["path"]: file["new_hash"]
+                for file in response["files"]
+                if file["old_hash"] != file["new_hash"] and file["new_hash"]
+            }
+
+            async def download_file(file_path, file_hash):
+                if await self.file_storage.exists(file_hash):
+                    return
+                async with self.file_storage.writer() as stored_file, client.stream(
+                    "GET", f"http://{executor_pod_ip}:8000/workspace/{file_path}"
+                ) as pod_file:
+                    async for chunk in pod_file.aiter_bytes():
+                        await stored_file.write(chunk)
+
+            await asyncio.gather(
+                *(
+                    download_file(file_path, file_hash)
+                    for file_path, file_hash in changed_files.items()
+                )
+            )
+
             return KubernetesCodeExecutor.Result(
                 stdout=response["stdout"],
                 stderr=response["stderr"],
                 exit_code=response["exit_code"],
-                files={
-                    file["path"]: file["new_hash"]
-                    for file in response["files"]
-                    if file["old_hash"] != file["new_hash"] and file["new_hash"]
-                },
+                files=changed_files,
             )
 
     @asynccontextmanager
