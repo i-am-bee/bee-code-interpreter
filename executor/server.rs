@@ -105,8 +105,6 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
     let before_hashes = get_file_hashes(&workspace).await;
     let source_dir = TempDir::new()?;
     let pip_dir = TempDir::new()?;
-
-    log::info!("test");
     
     tokio::fs::write(source_dir.path().join("script.py"), &payload.source_code).await?;
     let guessed_deps = String::from_utf8_lossy(
@@ -117,7 +115,6 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
             .await?
             .stdout,
     ).trim().to_string();
-    log::info!("test");
 
     if !guessed_deps.is_empty() {
         Command::new("pip")
@@ -126,7 +123,6 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
             .output()
             .await?;
     }
-    log::info!("test");
     let timeout = Duration::from_secs(payload.timeout.unwrap_or(60));
     let (stdout, stderr, exit_code) = tokio::time::timeout(
         timeout,
@@ -146,7 +142,6 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
         })
     })
     .unwrap_or_else(|_| Ok((String::new(), "Execution timed out".to_string(), -1)))?;
-    log::info!("test");
     let after_hashes = get_file_hashes(&workspace).await;
     let files = before_hashes
         .iter()
