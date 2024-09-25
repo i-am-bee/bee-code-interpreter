@@ -71,7 +71,7 @@ class ApplicationContext:
             kubectl=self.kubectl,
             executor_image=self.config.executor_image,
             container_resources=self.config.executor_container_resources,
-            pod_filesystem_state_manager=self.pod_filesystem_state_manager,
+            file_storage=self.file_storage,
             executor_pod_spec_extra=self.config.executor_pod_spec_extra,
         )
 

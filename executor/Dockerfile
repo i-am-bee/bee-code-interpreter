@@ -15,13 +15,22 @@
 ARG GO_VERSION="1.23.0"
 ARG UPM_VERSION="2.5.0"
 ARG ALPINE_VERSION="3.20"
+ARG RUST_VERSION="1.81"
+
+FROM docker.io/rust:${RUST_VERSION}-alpine${ALPINE_VERSION} AS build-executor-server
+WORKDIR /workdir
+RUN apk add --no-cache musl-dev
+COPY --link Cargo.toml .
+COPY --link Cargo.lock .
+COPY --link server.rs .
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/workdir/target/release/build \
+    --mount=type=cache,target=/workdir/target/release/deps \
+    cargo build --release
 
 FROM docker.io/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build-upm
-
 ARG UPM_VERSION
-
 WORKDIR /workdir
-
 RUN apk add --no-cache git make gcc g++ musl-dev && \
     git clone --depth 1 --branch "v${UPM_VERSION}" https://github.com/replit/upm.git  && \
     cd ./upm && \
@@ -29,7 +38,6 @@ RUN apk add --no-cache git make gcc g++ musl-dev && \
     make install
 
 FROM docker.io/alpine:${ALPINE_VERSION} AS runtime
-
 RUN apk add --no-cache \
     coreutils \
     python3 \
@@ -40,25 +48,11 @@ RUN apk add --no-cache \
     py3-pip \
     py3-scipy \
     py3-scikit-learn
-
-COPY requirements.txt /
-
-RUN python3 -m venv --system-site-packages /venv && \
-    /venv/bin/pip install --no-cache-dir -r /requirements.txt
-
-COPY execute /
-
-COPY --from=build-upm /go/bin/upm /usr/local/bin/upm
-COPY --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
+COPY --link --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server
+COPY --link --from=build-upm /go/bin/upm /usr/local/bin/upm
+COPY --link --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
 ENV PYPI_MAP_DB=/pypi_map.sqlite
-
 RUN mkdir /workspace && chmod 777 /workspace
-
 WORKDIR /workspace
-
-# Use an arbitrary UID
 USER 1001050000
-
-ENV PATH="/venv/bin:$PATH"
-
-ENTRYPOINT [ "/execute" ]
+ENTRYPOINT [ "executor-server" ]

@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
+import httpx
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-import logging
-from datetime import UTC, datetime, timedelta
 from typing import AsyncGenerator, Mapping
 
 from frozendict import frozendict
@@ -27,10 +27,8 @@ from tenacity import (
     wait_exponential,
 )
 
-from code_interpreter.services.pod_filesystem_state_manager import (
-    PodFilesystemStateManager,
-)
 from code_interpreter.services.kubectl import Kubectl
+from code_interpreter.services.storage import Storage
 from code_interpreter.utils.validation import AbsolutePath, ExecutorId, Hash
 
 
@@ -54,13 +52,13 @@ class KubernetesCodeExecutor:
         kubectl: Kubectl,
         executor_image: str,
         container_resources: dict,
-        pod_filesystem_state_manager: PodFilesystemStateManager,
+        file_storage: Storage,
         executor_pod_spec_extra: dict,
     ) -> None:
         self.kubectl = kubectl
         self.executor_image = executor_image
         self.container_resources = container_resources
-        self.pod_filesystem_state_manager = pod_filesystem_state_manager
+        self.file_storage = file_storage
         self.executor_pod_spec_extra = executor_pod_spec_extra
 
     @retry(
@@ -87,117 +85,94 @@ class KubernetesCodeExecutor:
         The `executor_id` serves to differentiate between users, as only pods with matching `executor_id` will ever be re-used.
         This is mainly a "just to be sure" security mechanism in case users find a way to tamper with the pods.
         """
-        async with self._executor_pod(executor_id) as executor_pod_name:
-            await self.pod_filesystem_state_manager.restore(executor_pod_name, files)
-            await self.pod_filesystem_state_manager.pod_file_manager.write(
-                source_code.encode(), executor_pod_name, "/tmp/script.py"
+        async with self._executor_pod(
+            executor_id
+        ) as executor_pod, httpx.AsyncClient() as client:
+            executor_pod_ip = executor_pod["status"]["podIP"]
+
+            async def upload_file(file_path, file_hash):
+                async with self.file_storage.reader(file_hash) as file_reader:
+                    return await client.put(
+                        f"http://{executor_pod_ip}:8000/workspace/{file_path}",
+                        data=file_reader,
+                    )
+
+            await asyncio.gather(
+                *(
+                    upload_file(file_path, file_hash)
+                    for file_path, file_hash in files.items()
+                )
             )
 
-            process = await self.kubectl.exec_raw(
-                executor_pod_name,
-                "--",
-                "/execute",
-            )
-            stdout, stderr = await process.communicate()
-            new_files = await self.pod_filesystem_state_manager.commit(
-                executor_pod_name
-            )
+            response = (
+                await client.post(
+                    f"http://{executor_pod_ip}:8000/execute",
+                    json={
+                        "source_code": source_code,
+                    },
+                )
+            ).json()
+
             return KubernetesCodeExecutor.Result(
-                stdout=stdout.decode(),
-                stderr=stderr.decode(),
-                exit_code=process.returncode or 0,
-                files=new_files,
+                stdout=response["stdout"],
+                stderr=response["stderr"],
+                exit_code=response["exit_code"],
+                files={
+                    file["path"]: file["new_hash"]
+                    for file in response["files"]
+                    if file["old_hash"] != file["new_hash"] and file["new_hash"]
+                },
             )
-
-    async def cleanup_executors(self, max_idle_time: timedelta) -> None:
-        """
-        Remove executor pods that have been idle for longer than `max_idle_time`.
-        This is controlled using the `last_exec_at` annotation, which is updated every time a pod is used.
-
-        This method is meant to be called periodically.
-        """
-        logging.info("Cleaning up old executors")
-        for pod in (
-            await self.kubectl.get("pods", selector="app=code-interpreter-executor")
-        )["items"]:
-            last_exec_at = pod["metadata"]["annotations"]["last_exec_at"]
-            if not last_exec_at:
-                continue
-            if datetime.now(UTC) - datetime.fromisoformat(last_exec_at) > max_idle_time:
-                logging.info(f"Deleting executor pod {pod['metadata']['name']}")
-                await self.kubectl.delete("pod", pod["metadata"]["name"])
 
     @asynccontextmanager
-    async def _executor_pod(self, executor_id: ExecutorId) -> AsyncGenerator[str, None]:
+    async def _executor_pod(
+        self, executor_id: ExecutorId
+    ) -> AsyncGenerator[dict, None]:
         executor_pods = await self.kubectl.get(
             "pods",
             selector=f"app=code-interpreter-executor,executor_id={executor_id}",
         )
 
-        free_executor_pods = [
-            pod
-            for pod in executor_pods["items"]
-            if not pod["metadata"]["annotations"].get("locked_at")
-        ]
+        executor_pod_names_in_use = {
+            executor_pod["metadata"]["name"] for executor_pod in executor_pods["items"]
+        }
+        executor_pod_name = next(
+            f"code-interpreter-executor-{executor_id}-{i}"
+            for i in range(len(executor_pods["items"]) + 1)
+            if f"code-interpreter-executor-{executor_id}-{i}"
+            not in executor_pod_names_in_use
+        )
 
-        if free_executor_pods:
-            executor_pod = free_executor_pods[0]
-            executor_pod["metadata"]["annotations"]["locked_at"] = datetime.now(
-                UTC
-            ).isoformat()
-            # "kubectl replace" has compare-and-swap semantics, which ensures that only one client can lock the pod
-            await self.kubectl.replace(
-                "pod",
-                executor_pod["metadata"]["name"],
-                filename="-",
-                input=executor_pod,
-            )
-            executor_pod_name = executor_pod["metadata"]["name"]
-        else:
-            executor_pod_names_in_use = {
-                executor_pod["metadata"]["name"]
-                for executor_pod in executor_pods["items"]
-            }
-            executor_pod_name = next(
-                f"code-interpreter-executor-{executor_id}-{i}"
-                for i in range(len(executor_pods["items"]) + 1)
-                if f"code-interpreter-executor-{executor_id}-{i}"
-                not in executor_pod_names_in_use
-            )
-
-            await self.kubectl.create(
-                filename="-",
-                input={
-                    "apiVersion": "v1",
-                    "kind": "Pod",
-                    "metadata": {
-                        "name": executor_pod_name,
-                        "annotations": {
-                            "last_exec_at": datetime.now(UTC).isoformat(),
-                            "locked_at": datetime.now(UTC).isoformat(),
-                        },
-                        "labels": {
-                            "app": "code-interpreter-executor",
-                            "executor_id": executor_id,
-                        },
-                    },
-                    "spec": {
-                        "containers": [
-                            {
-                                "name": "executor",
-                                "image": self.executor_image,
-                                "command": ["sleep", "infinity"],
-                                "resources": self.container_resources,
-                            }
-                        ],
-                        **self.executor_pod_spec_extra,
+        await self.kubectl.create(
+            filename="-",
+            input={
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "metadata": {
+                    "name": executor_pod_name,
+                    "labels": {
+                        "app": "code-interpreter-executor",
+                        "executor_id": executor_id,
                     },
                 },
-            )
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "executor",
+                            "image": self.executor_image,
+                            "resources": self.container_resources,
+                            "ports": [{"containerPort": 8000}],
+                        }
+                    ],
+                    **self.executor_pod_spec_extra,
+                },
+            },
+        )
 
         pod = await self.kubectl.wait("pod", executor_pod_name, _for="condition=Ready")
 
         try:
-            yield pod["metadata"]["name"]
+            yield pod
         finally:
-            await self.kubectl.annotate("pod", executor_pod_name, "locked_at-")
+            pass
+            # asyncio.create_task(self.kubectl.delete("pod", executor_pod_name))
