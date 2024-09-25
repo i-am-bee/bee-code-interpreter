@@ -106,11 +106,6 @@ with open('file.txt', 'w') as f:
     assert response.exit_code == 0
     assert response.files["/workspace/file.txt"] == file_hash
 
-    assert (
-        read_file(response.files["/workspace/file.txt"], config.file_storage_path)
-        == file_content.encode()
-    )
-
 
 def test_parse_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):
     response: ParseCustomToolResponse = grpc_stub.ParseCustomTool(

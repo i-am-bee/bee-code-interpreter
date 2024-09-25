@@ -33,29 +33,14 @@ class Config(BaseSettings):
     # text content of the CA certificate file
     grpc_tls_ca_cert: bytes | None = None
 
-    # Kubernetes context from ~/.kube/config to use -- defaults to current context or in-cluster config
-    kubernetes_context: str | None = None
-
-    # Kubernetes namespace to use -- defaults to current namespace according to context or in-cluster config
-    kubernetes_namespace: str | None = None
-
     # the image to use for the executor pods
     executor_image: str = "localhost/bee-code-interpreter-executor:local"
-
-    # maximum time in seconds an executor pod can be idle before being deleted
-    executor_max_idle_time: int = 3600
-
-    # interval in seconds to check for idle executors and delete them
-    executor_cleanup_interval: int = 300
 
     # 'resources' field for executor pod container
     executor_container_resources: dict = {}
 
     # extra fields for executor pod spec
     executor_pod_spec_extra: dict = {}
-
-    # folders to manage in executor pods by saving and restoring them
-    executor_managed_folders: list[str] = ["/workspace"]
 
     # path to store files
     file_storage_path: str = "./.tmp/files"

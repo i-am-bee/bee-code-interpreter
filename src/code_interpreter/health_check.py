@@ -45,7 +45,7 @@ def health_check():
     assert (
         CodeInterpreterServiceStub(channel)
         .Execute(
-            ExecuteRequest(source_code="print(21 * 2)"),
+            ExecuteRequest(executor_id="health-check", source_code="print(21 * 2)"),
             timeout=9999,  # no need to timeout here -- k8s health checks have their own timeouts
         )
         .stdout

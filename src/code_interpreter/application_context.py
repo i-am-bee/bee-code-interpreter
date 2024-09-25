@@ -39,10 +39,7 @@ class ApplicationContext:
 
     @cached_property
     def kubectl(self) -> Kubectl:
-        return Kubectl(
-            context=self.config.kubernetes_context,
-            namespace=self.config.kubernetes_namespace,
-        )
+        return Kubectl()
 
     @cached_property
     def file_storage(self) -> Storage:
