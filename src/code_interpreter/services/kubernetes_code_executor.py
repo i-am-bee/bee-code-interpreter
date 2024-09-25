@@ -145,6 +145,9 @@ class KubernetesCodeExecutor:
             )
 
     async def fill_executor_pod_queue(self):
+        """
+        Ensure that we have enough ready executor pods.
+        """
         while (
             len(self.executor_pod_queue) + self.executor_pod_queue_spawning_count
             < self.executor_pod_queue_target_length
@@ -154,6 +157,9 @@ class KubernetesCodeExecutor:
             self.executor_pod_queue_spawning_count -= 1
 
     async def spawn_executor_pod(self):
+        """
+        Create a new executor pod and return its JSON
+        """
         if self.self_pod is None:
             self.self_pod = await self.kubectl.get("pod", os.environ["HOSTNAME"])
         pod = await self.kubectl.create(
@@ -197,6 +203,9 @@ class KubernetesCodeExecutor:
 
     @asynccontextmanager
     async def executor_pod(self) -> AsyncGenerator[dict, None]:
+        """
+        Context manager that grabs a ready executor pod from the queue and deletes it when done.
+        """
         pod = (
             self.executor_pod_queue.popleft()
             if self.executor_pod_queue

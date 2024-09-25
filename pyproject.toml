@@ -29,16 +29,10 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks.run]
-cmd = "python -m code_interpreter"
+shell = "./scripts/run.sh"
 
 [tool.poe.tasks.health_check]
 cmd = "python -m code_interpreter.health_check"
-
-[tool.poe.tasks.kubernetes_check]
-cmd = "python -m code_interpreter.kubernetes_check"
-
-[tool.poe.tasks.compose-down]
-sequence = [{ shell = "docker compose down --volumes" }]
 
 [tool.poe.tasks.publish]
 help = "Bump version + build and publish docker images"
@@ -52,4 +46,4 @@ sequence = [
 
 [tool.poe.tasks.test]
 help = "Verify executor is running + run tests"
-sequence = [{ cmd = "python -m code_interpreter.health_check" }, { shell = "APP_FILE_STORAGE_PATH=${APP_FILE_STORAGE_PATH:-./.tmp/files} pytest -v test" } ]
+sequence = [{ cmd = "python -m code_interpreter.health_check" }, { shell = "pytest -v test" } ]

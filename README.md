@@ -13,87 +13,82 @@ A gRPC service intended as a backend for an LLM that can run arbitrary pieces of
 
 Built from the ground up to be safe and reproducible.
 
+> [!NOTICE]
+> This project contains submodules. Be sure to clone it with `git clone --recurse-submodules`, or initialize the submodules later with `git submodule update --init`.
+
 ---
 
 ## 🪑 Local set-up
 
-> [!NOTE]
-> We have a [docker compose file](https://github.com/i-am-bee/bee-agent-framework/blob/main/docker-compose.yml) that is recommended if you only want to run bee-code-interpreter locally. Read on only if you wish to modify the code.
+It is possible to quickly spin up Bee Code Interpreter locally. It is not necessary to have Python or Poetry set up for this, since all is done using Docker.
 
-Pre-requisites:
-- `git`
-- `python` 3.12+
-- `poetry`
-- `poethepoet`
-- `docker` and `kubectl` (we recommend using [Rancher Desktop](https://rancherdesktop.io/))
-- `grpcurl` (optional -- for testing)
+The only requirement is [Rancher Desktop](https://rancherdesktop.io/) -- a local Docker and Kubernetes distribution.
 
-### Clone this repo
+> [!CAUTION]
+> If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
+> Many implementations (like Podman Desktop) require an additional step to make locally built images available in Kubernetes.
+> In that case, you might want to check `scripts/run.sh` and modify it accordingly.
 
-This project contains submodules. Be sure to clone it with `git clone --recurse-submodules`, or initialize the submodules later with `git submodule update --init`.
+The following script will build the two containers (`code-interpreter` and `code-interpreter-executor`) and set up an instance of Bee Code Interpreter in your local Kubernetes cluster.
 
-### Install dependencies
+> [!CAUTION]
+> Ensure that you have the correct context selected in `kubectl` before running this command.
 
 ```shell
-poetry install
+bash ./scripts/run.sh
 ```
 
-### 🚀 Run
+Once you see the line `INFO:root:Starting server on insecure port 0.0.0.0:50051`, Bee Code Interpreter should now be running!
 
-First, prepare your Kubernetes cluster / namespace that will be used for running executors. If using a shared cluster, ensure that your user has all permissions for `pods` and `pods/exec` in this namespace. For local development, we recommend using the local cluster feature of [Rancher Desktop](https://rancherdesktop.io/).
-
-Ensure that the cluster can access the executor image. For Rancher Desktop, it is enough to build it, which will make it available in the cluster:
+In order to interact with the service, install `grpcurl`. Run "hello world" with:
 
 ```bash
-docker build -t localhost/bee-code-interpreter-executor:local executor
-```
-
-Finally, start the bee-code-interpreter service by running:
-
-```bash
-poe run
-```
-
-🎉 Bee Code Interpreter should now be running! You can test it using `grpcurl` from another terminal:
-
-```bash
-grpcurl -d '{"source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
-```
-
-
-### 🧪 Test
-
-> [!WARNING]
-> This project is using end-to-end tests that require a running instance to be executed against. Before running tests, ensure that you have the service (`poe run`) running in another terminal. 
-
-```bash
-poe test
+grpcurl -d '{"executor_id": "test", "source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
 ```
 
 ---
 
-## 📣 Publishing
+## 🧳 Production setup
 
-```shell
-poe publish $NEW_VERSION
-```
-
-## 🧳 Production set-up
-
-All configuration options are defined and described in `src/code_interpreter/config.py`. You can override them using environment variables with `APP_` prefix, eg. `APP_EXECUTOR_IMAGE` to override `executor_image`.
+All configuration options are defined and described in `src/code_interpreter/config.py`. You can override them using environment variables with `APP_` prefix, e.g. `APP_EXECUTOR_IMAGE` to override `executor_image`.
 
 For a production setup, ensure that you have the following:
 - A Kubernetes cluster with a secure container runtime (gVisor, Kata Containers, Firecracker, etc.)
   > ⚠️ Docker containers are not fully sandboxed by default. To protect from malicious attackers, do not skip this step.
 - A service account, bound to the pod where `bee-code-interpreter` is running, with permissions to manage pods in the namespace it is configured to use.
-  > ℹ️ Bee Code Interpreter automatically uses a pod service account where available.
 - The cluster must have the executor image available (either from a registry, or built from `./executor` in this repo).
-- You may check the usability of the cluster using `python -m code_interpreter.kubernetes_check`.
 - You may check the health of the local service using `python -m code_interpreter.health_check`.
+
+---
+
+## 🧑‍💻 Development
+
+#### Set up:
+
+- Ensure that you have `python3.12`, `poetry` and `poethepoet` available on your system.
+- Install the project with `poetry install`.
+
+#### Run end-to-end tests:
+
+``` bash
+# in 1st terminal (Bee Code Interpreter must be running for end-to-end tests to work):
+poe run
+
+# in 2nd terminal:
+poe test
+```
+
+#### Publish a new version:
+
+```shell
+poe publish $NEW_VERSION
+```
+
+---
 
 ## Bugs
 
-We are using [GitHub Issues](https://github.com/i-am-bee/bee-code-interpreter/issues) to manage our public bugs. We keep a close eye on this so before filing a new issue, try to make sure the problem does not already exist.
+We are using [GitHub Issues](https://github.com/i-am-bee/bee-code-interpreter/issues) to manage our public bugs. We keep a close eye on this so before filing a new issue, try to make sure the problem in not already reported.
 
 ## Code of conduct
 
