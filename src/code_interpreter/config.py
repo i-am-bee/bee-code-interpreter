@@ -59,3 +59,6 @@ class Config(BaseSettings):
 
     # path to store files
     file_storage_path: str = "./.tmp/files"
+
+    # how many executor pods to keep ready for immediate use
+    executor_pod_queue_target_length: int = 5

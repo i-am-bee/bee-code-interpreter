@@ -16,9 +16,6 @@ from typing import Annotated, TypeAliasType
 
 from pydantic import Field
 
-ExecutorId = TypeAliasType(
-    "ExecutorId", Annotated[str, Field(pattern=r"^[a-z0-9-]{1,32}$")]
-)
 Hash = TypeAliasType("Hash", Annotated[str, Field(pattern=r"^[0-9a-zA-Z_-]{1,255}$")])
 AbsolutePath = TypeAliasType(
     "AbsolutePath", Annotated[str, Field(pattern=r"^/[^/].*$")]

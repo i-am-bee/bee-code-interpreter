@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import collections
 import os
 import httpx
 from contextlib import asynccontextmanager
@@ -30,7 +31,7 @@ from tenacity import (
 
 from code_interpreter.services.kubectl import Kubectl
 from code_interpreter.services.storage import Storage
-from code_interpreter.utils.validation import AbsolutePath, ExecutorId, Hash
+from code_interpreter.utils.validation import AbsolutePath, Hash
 
 
 class KubernetesCodeExecutor:
@@ -55,6 +56,7 @@ class KubernetesCodeExecutor:
         container_resources: dict,
         file_storage: Storage,
         executor_pod_spec_extra: dict,
+        executor_pod_queue_target_length: int,
     ) -> None:
         self.kubectl = kubectl
         self.executor_image = executor_image
@@ -62,6 +64,9 @@ class KubernetesCodeExecutor:
         self.file_storage = file_storage
         self.executor_pod_spec_extra = executor_pod_spec_extra
         self.self_pod = None
+        self.executor_pod_queue_target_length = executor_pod_queue_target_length
+        self.executor_pod_queue_spawning_count = 0
+        self.executor_pod_queue = collections.deque()
 
     @retry(
         retry=retry_if_exception_type(RuntimeError),
@@ -71,7 +76,6 @@ class KubernetesCodeExecutor:
     @validate_call
     async def execute(
         self,
-        executor_id: ExecutorId,
         source_code: str,
         files: Mapping[AbsolutePath, Hash] = frozendict(),
     ) -> Result:
@@ -81,13 +85,9 @@ class KubernetesCodeExecutor:
         Optionally, a file mapping can be provided to restore the pod filesystem to a specific state.
         If none is provided, starts from a blank slate.
 
-        As pods are left running for some time, we primarily try to reuse existing pods. If none are available, we spawn a new one.
-        The pod is locked to prevent concurrent use, and the lock is removed when the context manager exits.
-
-        The `executor_id` serves to differentiate between users, as only pods with matching `executor_id` will ever be re-used.
-        This is mainly a "just to be sure" security mechanism in case users find a way to tamper with the pods.
+        Every time, a fresh pod is taken from a queue. It is discarded after use.
         """
-        async with self._executor_pod(executor_id) as executor_pod, httpx.AsyncClient(
+        async with self.executor_pod() as executor_pod, httpx.AsyncClient(
             timeout=60.0
         ) as client:
             executor_pod_ip = executor_pod["status"]["podIP"]
@@ -144,38 +144,27 @@ class KubernetesCodeExecutor:
                 files=changed_files,
             )
 
-    @asynccontextmanager
-    async def _executor_pod(
-        self, executor_id: ExecutorId
-    ) -> AsyncGenerator[dict, None]:
+    async def fill_executor_pod_queue(self):
+        while (
+            len(self.executor_pod_queue) + self.executor_pod_queue_spawning_count
+            < self.executor_pod_queue_target_length
+        ):
+            self.executor_pod_queue_spawning_count += 1
+            self.executor_pod_queue.append(await self.spawn_executor_pod())
+            self.executor_pod_queue_spawning_count -= 1
+
+    async def spawn_executor_pod(self):
         if self.self_pod is None:
             self.self_pod = await self.kubectl.get("pod", os.environ["HOSTNAME"])
-
-        executor_pods = await self.kubectl.get(
-            "pods",
-            selector=f"app=code-interpreter-executor,executor_id={executor_id}",
-        )
-
-        executor_pod_names_in_use = {
-            executor_pod["metadata"]["name"] for executor_pod in executor_pods["items"]
-        }
-        executor_pod_name = next(
-            f"code-interpreter-executor-{executor_id}-{i}"
-            for i in range(len(executor_pods["items"]) + 1)
-            if f"code-interpreter-executor-{executor_id}-{i}"
-            not in executor_pod_names_in_use
-        )
-
-        await self.kubectl.create(
+        pod = await self.kubectl.create(
             filename="-",
             input={
                 "apiVersion": "v1",
                 "kind": "Pod",
                 "metadata": {
-                    "name": executor_pod_name,
+                    "generateName": "code-interpreter-executor-",
                     "labels": {
                         "app": "code-interpreter-executor",
-                        "executor_id": executor_id,
                     },
                     "ownerReferences": [
                         {
@@ -201,10 +190,20 @@ class KubernetesCodeExecutor:
                 },
             },
         )
+        pod = await self.kubectl.wait(
+            "pod", pod["metadata"]["name"], _for="condition=Ready"
+        )
+        return pod
 
-        pod = await self.kubectl.wait("pod", executor_pod_name, _for="condition=Ready")
-
+    @asynccontextmanager
+    async def executor_pod(self) -> AsyncGenerator[dict, None]:
+        pod = (
+            self.executor_pod_queue.pop()
+            if self.executor_pod_queue
+            else await self.spawn_executor_pod()
+        )
+        asyncio.create_task(self.fill_executor_pod_queue())
         try:
             yield pod
         finally:
-            asyncio.create_task(self.kubectl.delete("pod", executor_pod_name))
+            asyncio.create_task(self.kubectl.delete("pod", pod["metadata"]["name"]))

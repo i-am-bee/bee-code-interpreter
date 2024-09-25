@@ -57,7 +57,7 @@ poe run
 🎉 Bee Code Interpreter should now be running! You can test it using `grpcurl` from another terminal:
 
 ```bash
-grpcurl -d '{"executor_id":"1","source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
+grpcurl -d '{"source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
 ```
 
 

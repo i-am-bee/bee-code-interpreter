@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import logging
 from functools import cached_property
 
@@ -50,13 +51,16 @@ class ApplicationContext:
 
     @cached_property
     def code_executor(self) -> KubernetesCodeExecutor:
-        return KubernetesCodeExecutor(
+        code_executor = KubernetesCodeExecutor(
             kubectl=self.kubectl,
             executor_image=self.config.executor_image,
             container_resources=self.config.executor_container_resources,
             file_storage=self.file_storage,
             executor_pod_spec_extra=self.config.executor_pod_spec_extra,
+            executor_pod_queue_target_length=self.config.executor_pod_queue_target_length,
         )
+        asyncio.create_task(code_executor.fill_executor_pod_queue())
+        return code_executor
 
     @cached_property
     def custom_tool_executor(self) -> CustomToolExecutor:
@@ -69,7 +73,6 @@ class ApplicationContext:
         return [
             CodeInterpreterServicer(
                 code_executor=self.code_executor,
-                pod_filesystem_state_manager=self.pod_filesystem_state_manager,
                 custom_tool_executor=self.custom_tool_executor,
             )
         ]
