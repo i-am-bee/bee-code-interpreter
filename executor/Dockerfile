@@ -20,9 +20,9 @@ ARG RUST_VERSION="1.81"
 FROM docker.io/rust:${RUST_VERSION}-alpine${ALPINE_VERSION} AS build-executor-server
 WORKDIR /workdir
 RUN apk add --no-cache musl-dev
-COPY --link Cargo.toml .
-COPY --link Cargo.lock .
-COPY --link server.rs .
+COPY Cargo.toml .
+COPY Cargo.lock .
+COPY server.rs .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/workdir/target/release/build \
     --mount=type=cache,target=/workdir/target/release/deps \
@@ -48,9 +48,9 @@ RUN apk add --no-cache \
     py3-pip \
     py3-scipy \
     py3-scikit-learn
-COPY --link --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server
-COPY --link --from=build-upm /go/bin/upm /usr/local/bin/upm
-COPY --link --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
+COPY --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server
+COPY --from=build-upm /go/bin/upm /usr/local/bin/upm
+COPY --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
 ENV PYPI_MAP_DB=/pypi_map.sqlite
 RUN mkdir /workspace && chmod 777 /workspace
 WORKDIR /workspace
