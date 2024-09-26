@@ -84,6 +84,9 @@ poe test
 #### Publish a new version:
 
 ```shell
+# First ensure that your currently selected `docker buildx` builder supports multi arch, e.g. by:
+docker buildx create --use --name multi-arch-builder --driver docker-container
+
 poe publish $NEW_VERSION
 ```
 

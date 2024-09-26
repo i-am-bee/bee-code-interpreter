@@ -29,14 +29,14 @@ else
 fi
 
 echo "Building code interpreter"
-docker manifest rm "$USER/$CODE_INTERPRETER_NAME" 2>/dev/null || true
-docker build --progress=plain --platform "$PLATFORMS" --manifest "$USER/$CODE_INTERPRETER_NAME" .
-docker manifest push "$USER/$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:latest" --all
-docker manifest push "$USER/$CODE_INTERPRETER_NAME" "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:$VERSION" --all
+docker buildx build --platform "$PLATFORMS" \
+  --tag "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:latest" \
+  --tag "$REPOSITORY/$USER/$CODE_INTERPRETER_NAME:$VERSION" \
+  --push .
 
 echo "Building code executor"
 cd "executor"
-docker manifest rm "$USER/$CODE_EXECUTOR_NAME" 2>/dev/null || true
-docker build --progress=plain --platform "$PLATFORMS" --manifest "$USER/$CODE_EXECUTOR_NAME" .
-docker manifest push "$USER/$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:latest" --all
-docker manifest push "$USER/$CODE_EXECUTOR_NAME" "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:$VERSION" --all
+docker buildx build --platform "$PLATFORMS" \
+  --tag "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:latest" \
+  --tag "$REPOSITORY/$USER/$CODE_EXECUTOR_NAME:$VERSION" \
+  --push .
