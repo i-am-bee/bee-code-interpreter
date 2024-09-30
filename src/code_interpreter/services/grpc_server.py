@@ -17,6 +17,7 @@ import logging
 import grpc
 from grpc_reflection.v1alpha import reflection
 
+logger = logging.getLogger("grpc_server")
 
 class GrpcServer:
     def __init__(self, servicers: list, server_credentials: grpc.ServerCredentials | None = None) -> None:
@@ -26,10 +27,10 @@ class GrpcServer:
 
     async def start(self, listen_addr: str) -> None:
         if self.server_credentials is None:
-            logging.info("Starting server on insecure port %s", listen_addr)
+            logger.info("Starting server on insecure port %s", listen_addr)
             self.server.add_insecure_port(listen_addr)
         else:
-            logging.info("Starting server on secure port %s", listen_addr)
+            logger.info("Starting server on secure port %s", listen_addr)
             self.server.add_secure_port(listen_addr, self.server_credentials)
 
         try:
@@ -45,7 +46,7 @@ class GrpcServer:
         
         service_names = []
         for servicer in servicers:
-            logging.info("Registering servicer %s", servicer.__class__.__name__)
+            logger.info("Registering servicer %s", servicer.__class__.__name__)
             servicer_parent_class = servicer.__class__.__bases__[0]
             servicer_module_pb2_grpc = importlib.import_module(
                 servicer_parent_class.__module__

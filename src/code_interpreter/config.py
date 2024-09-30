@@ -18,8 +18,33 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Config(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="APP_", env_ignore_empty=True)
 
-    # logging level
-    log_level: str = "DEBUG"
+    # logging config: https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
+    logging_config: dict = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "standard",
+            },
+        },
+        "formatters": {
+            "standard": {
+                "format": "[%(levelname)s] [%(request_id)s] %(name)s: %(message)s",
+            },
+        },
+        "root": {
+            "level": "WARNING",
+            "handlers": ["console"],
+            "propagate": True,
+        },
+        "loggers": {
+            "kubectl": {"level": "INFO"},
+            "grpc_server": {"level": "INFO"},
+            "code_interpreter_servicer": {"level": "INFO"},
+            "kubernetes_code_executor": {"level": "INFO"},
+        },
+    }
 
     # the address and port gRPC server will listen on
     grpc_listen_addr: str = "0.0.0.0:50051"
