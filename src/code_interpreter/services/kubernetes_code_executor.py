@@ -14,6 +14,7 @@
 
 import asyncio
 import collections
+import logging
 import os
 import httpx
 from contextlib import asynccontextmanager
@@ -33,6 +34,7 @@ from code_interpreter.services.kubectl import Kubectl
 from code_interpreter.services.storage import Storage
 from code_interpreter.utils.validation import AbsolutePath, Hash
 
+logger = logging.getLogger("kubernetes_code_executor")
 
 class KubernetesCodeExecutor:
     """
@@ -99,6 +101,7 @@ class KubernetesCodeExecutor:
                         data=file_reader,
                     )
 
+            logger.info("Uploading %s files to executor pod", len(files))
             await asyncio.gather(
                 *(
                     upload_file(file_path, file_hash)
@@ -106,6 +109,7 @@ class KubernetesCodeExecutor:
                 )
             )
 
+            logger.info("Requesting code execution")
             response = (
                 await client.post(
                     f"http://{executor_pod_ip}:8000/execute",
@@ -130,6 +134,7 @@ class KubernetesCodeExecutor:
                     async for chunk in pod_file.aiter_bytes():
                         await stored_file.write(chunk)
 
+            logger.info("Collecting %s changed files", len(changed_files))
             await asyncio.gather(
                 *(
                     download_file(file_path, file_hash)
@@ -148,13 +153,34 @@ class KubernetesCodeExecutor:
         """
         Ensure that we have enough ready executor pods.
         """
-        while (
-            len(self.executor_pod_queue) + self.executor_pod_queue_spawning_count
-            < self.executor_pod_queue_target_length
-        ):
-            self.executor_pod_queue_spawning_count += 1
-            self.executor_pod_queue.append(await self.spawn_executor_pod())
-            self.executor_pod_queue_spawning_count -= 1
+        count_to_spawn = (
+            self.executor_pod_queue_target_length
+            - len(self.executor_pod_queue)
+            - self.executor_pod_queue_spawning_count
+        )
+        if count_to_spawn <= 0:
+            return
+        logger.info(
+            "Extending executor pod queue to target length %s, current queue length: %s, already spawning: %s, to spawn: %s",
+            self.executor_pod_queue_target_length,
+            len(self.executor_pod_queue),
+            self.executor_pod_queue_spawning_count,
+            count_to_spawn,
+        )
+        self.executor_pod_queue_spawning_count += count_to_spawn
+        try:
+            self.executor_pod_queue.extend(
+                await asyncio.gather(
+                    *(self.spawn_executor_pod() for _ in range(count_to_spawn))
+                )
+            )
+        finally:
+            self.executor_pod_queue_spawning_count -= count_to_spawn
+            logger.info(
+                "Executor pod queue extended, current queue length: %s, spawning: %s",
+                len(self.executor_pod_queue),
+                self.executor_pod_queue_spawning_count,
+            )
 
     async def spawn_executor_pod(self):
         """
@@ -213,6 +239,8 @@ class KubernetesCodeExecutor:
         )
         asyncio.create_task(self.fill_executor_pod_queue())
         try:
+            logger.info("Grabbing executor pod %s", pod["metadata"]["name"])
             yield pod
         finally:
+            logger.info("Removing used executor pod %s", pod["metadata"]["name"])
             asyncio.create_task(self.kubectl.delete("pod", pod["metadata"]["name"]))

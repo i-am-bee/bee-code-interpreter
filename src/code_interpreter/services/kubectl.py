@@ -19,6 +19,7 @@ import logging
 import shlex
 from typing import Any, Awaitable, Callable, Literal, get_overloads, overload
 
+logger = logging.getLogger("kubectl")
 
 class Kubectl:
     """
@@ -65,7 +66,7 @@ class Kubectl:
             ]
             + list(args[dashdash_position:])
         )
-        logging.info(f"Running kubectl command: kubectl {shlex.join(all_args)}")
+        logger.info(f"kubectl {shlex.join(all_args)}")
         return await asyncio.create_subprocess_exec(
             "kubectl",
             *all_args,

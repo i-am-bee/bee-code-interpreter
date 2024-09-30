@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import asyncio
+from contextvars import ContextVar
 import logging
+import logging.config
 from functools import cached_property
 
 import os
@@ -31,7 +33,26 @@ from code_interpreter.services.storage import Storage
 
 class ApplicationContext:
     def __init__(self) -> None:
-        logging.basicConfig(level=self.config.log_level)
+        self.setup_logging()
+
+    def setup_logging(self):
+        logging.config.dictConfig(self.config.logging_config)
+        request_id_context_var = self.request_id_context_var
+
+        class RequestIdFilter(logging.Filter):
+            def filter(self, record):
+                record.request_id = (
+                    request_id_context_var.get()
+                    or "00000000-0000-0000-0000-000000000000"
+                )
+                return True
+
+        for handler in logging.root.handlers:
+            handler.addFilter(RequestIdFilter())
+
+    @cached_property
+    def request_id_context_var(self):
+        return ContextVar("request_id", default=None)
     
     @cached_property
     def config(self) -> Config:
@@ -71,6 +92,7 @@ class ApplicationContext:
             CodeInterpreterServicer(
                 code_executor=self.code_executor,
                 custom_tool_executor=self.custom_tool_executor,
+                request_id_context_var=self.request_id_context_var,
             )
         ]
     
