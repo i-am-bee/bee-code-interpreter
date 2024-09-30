@@ -71,7 +71,6 @@ def read_file(file_hash: str, file_storage_path: str):
 
 def test_imports(grpc_stub: CodeInterpreterServiceStub):
     request = ExecuteRequest(
-        executor_id="test",
         source_code=Path("./examples/using_imports.py").read_text(),
     )
     response = grpc_stub.Execute(request, timeout=60)
@@ -80,7 +79,6 @@ def test_imports(grpc_stub: CodeInterpreterServiceStub):
 
 def test_ad_hoc_import(grpc_stub: CodeInterpreterServiceStub):
     request = ExecuteRequest(
-        executor_id="test",
         source_code=Path("./examples/cowsay.py").read_text(),
     )
     response = grpc_stub.Execute(request, timeout=60)
@@ -95,7 +93,6 @@ def test_create_file_in_interpreter(
 
     response: ExecuteResponse = grpc_stub.Execute(
         ExecuteRequest(
-            executor_id="test",
             source_code=f"""
 with open('file.txt', 'w') as f:
     f.write("{file_content}")
@@ -241,7 +238,6 @@ def test_parse_custom_tool_error(grpc_stub: CodeInterpreterServiceStub):
 def test_execute_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):
     result = grpc_stub.ExecuteCustomTool(
         ExecuteCustomToolRequest(
-            executor_id="test",
             tool_source_code="def adding_tool(a: int, b: int) -> int:\n  return a + b",
             tool_input_json='{"a": 1, "b": 2}',
         )
@@ -254,7 +250,6 @@ def test_execute_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):
 def test_execute_custom_tool_error(grpc_stub: CodeInterpreterServiceStub):
     result = grpc_stub.ExecuteCustomTool(
         ExecuteCustomToolRequest(
-            executor_id="test",
             tool_source_code="def division_tool(a: int, b: int) -> int:\n  return a / b",
             tool_input_json='{"a": 0, "b": 0}',
         )
