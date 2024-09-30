@@ -43,7 +43,7 @@ Once you see the line `INFO:root:Starting server on insecure port 0.0.0.0:50051`
 In order to interact with the service, install `grpcurl`. Run "hello world" with:
 
 ```bash
-grpcurl -d '{"executor_id": "test", "source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
+grpcurl -d '{"source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
 ```
 
 ---
