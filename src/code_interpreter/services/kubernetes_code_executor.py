@@ -129,8 +129,10 @@ class KubernetesCodeExecutor:
                 if await self.file_storage.exists(file_hash):
                     return
                 async with self.file_storage.writer() as stored_file, client.stream(
-                    "GET", f"http://{executor_pod_ip}:8000/workspace/{file_path}"
+                    "GET",
+                    f"http://{executor_pod_ip}:8000/workspace/{file_path.removeprefix("/workspace/")}",
                 ) as pod_file:
+                    pod_file.raise_for_status()
                     async for chunk in pod_file.aiter_bytes():
                         await stored_file.write(chunk)
 

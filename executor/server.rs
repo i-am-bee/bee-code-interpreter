@@ -14,6 +14,7 @@
 
 use actix_web::{middleware::Logger, web, App, Error, HttpResponse, HttpServer};
 use futures::StreamExt;
+use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -23,8 +24,9 @@ use std::time::Duration;
 use tempfile::TempDir;
 use tokio_stream::wrappers::ReadDirStream;
 use tokio::fs::{self, OpenOptions};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncWriteExt};
 use tokio::process::Command;
+use tokio_util::io::ReaderStream;
 
 #[derive(Serialize, Deserialize)]
 struct ExecuteRequest {
@@ -76,11 +78,13 @@ async fn download_file(path: web::Path<String>) -> Result<HttpResponse, Error> {
         .streaming(tokio_util::io::ReaderStream::new(file)))
 }
 
-async fn calculate_sha256(path: &str) -> Result<String, std::io::Error> {
-    let mut file = tokio::fs::File::open(path).await?;
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).await?;
-    Ok(format!("{:x}", Sha256::digest(&buffer)))
+async fn calculate_sha256(path: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let file = tokio::fs::File::open(path).await?;
+    let stream = ReaderStream::new(file);
+    let mut hasher = Sha256::new();
+    let mut stream = stream.map_err(|e: std::io::Error| e);
+    while let Some(chunk) = stream.try_next().await? { hasher.update(&chunk); }
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
 async fn get_file_hashes(dir: &str) -> HashMap<String, String> {
