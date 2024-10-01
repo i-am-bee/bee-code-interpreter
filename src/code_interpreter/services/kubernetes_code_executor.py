@@ -97,7 +97,7 @@ class KubernetesCodeExecutor:
             async def upload_file(file_path, file_hash):
                 async with self.file_storage.reader(file_hash) as file_reader:
                     return await client.put(
-                        f"http://{executor_pod_ip}:8000/workspace/{file_path}",
+                        f"http://{executor_pod_ip}:8000/workspace/{file_path.removeprefix("/workspace/")}",
                         data=file_reader,
                     )
 

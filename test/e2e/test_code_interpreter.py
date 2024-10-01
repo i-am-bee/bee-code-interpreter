@@ -11,10 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import json
 from pathlib import Path
-import shutil
 import grpc
 import hashlib
 import pytest
@@ -58,13 +56,6 @@ def grpc_stub(config: Config):
     return CodeInterpreterServiceStub(channel)
 
 
-@pytest.fixture(autouse=True)
-def clear_storage(config: Config):
-    for dirpath, dirnames, filenames in os.walk(config.file_storage_path):
-        for name in filenames + dirnames:
-            shutil.rmtree(os.path.join(dirpath, name), ignore_errors=True)
-
-
 def read_file(file_hash: str, file_storage_path: str):
     return (Path(file_storage_path) / file_hash).read_bytes()
 
@@ -102,6 +93,18 @@ with open('file.txt', 'w') as f:
 
     assert response.exit_code == 0
     assert response.files["/workspace/file.txt"] == file_hash
+
+    response: ExecuteResponse = grpc_stub.Execute(
+        ExecuteRequest(
+            source_code="""
+with open('file.txt', 'r') as f:
+    print(f.read())
+""",
+            files={"/workspace/file.txt": file_hash},
+        )
+    )
+    assert response.exit_code == 0
+    assert response.stdout == file_content + "\n"
 
 
 def test_parse_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):

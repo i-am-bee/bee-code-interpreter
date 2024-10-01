@@ -11,7 +11,7 @@ metadata:
 rules:
 - apiGroups: [""]
   resources: ["pods", "pods/exec"]
-  verbs: ["get", "list", "create", "delete", "update", "patch", "watch", "exec"]
+  verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -36,3 +36,6 @@ spec:
     image: localhost/bee-code-interpreter:local
     ports:
     - containerPort: 50051
+    env:
+    - name: APP_FILE_STORAGE_PATH
+      value: /storage
