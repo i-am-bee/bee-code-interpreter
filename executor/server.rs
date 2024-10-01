@@ -108,7 +108,6 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
     let workspace = env::var("APP_WORKSPACE").unwrap_or_else(|_| "/workspace".to_string());
     let before_hashes = get_file_hashes(&workspace).await;
     let source_dir = TempDir::new()?;
-    let pip_dir = TempDir::new()?;
     
     tokio::fs::write(source_dir.path().join("script.py"), &payload.source_code).await?;
     let guessed_deps = String::from_utf8_lossy(
@@ -122,7 +121,7 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
 
     if !guessed_deps.is_empty() {
         Command::new("pip")
-            .args(&["install", "--target", pip_dir.path().to_str().unwrap()])
+            .arg("install")
             .args(guessed_deps.split_whitespace())
             .output()
             .await?;
@@ -132,7 +131,6 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
         timeout,
         Command::new("python")
             .arg(source_dir.path().join("script.py"))
-            .env("PYTHONPATH", pip_dir.path())
             .output(),
     )
     .await
