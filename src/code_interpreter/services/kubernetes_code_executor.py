@@ -170,20 +170,31 @@ class KubernetesCodeExecutor:
             count_to_spawn,
         )
         self.executor_pod_queue_spawning_count += count_to_spawn
-        try:
-            self.executor_pod_queue.extend(
-                await asyncio.gather(
-                    *(self.spawn_executor_pod() for _ in range(count_to_spawn))
-                )
-            )
-        finally:
-            self.executor_pod_queue_spawning_count -= count_to_spawn
-            logger.info(
-                "Executor pod queue extended, current queue length: %s, spawning: %s",
-                len(self.executor_pod_queue),
-                self.executor_pod_queue_spawning_count,
-            )
 
+        spawned_pods = []
+        for pod_spawn_task in asyncio.as_completed(
+            asyncio.create_task(self.spawn_executor_pod())
+            for _ in range(count_to_spawn)
+        ):
+            try:
+                spawned_pods.append(await pod_spawn_task)
+            except Exception as e:
+                logger.error(f"Failed to spawn executor pod: {e}")
+            finally:
+                self.executor_pod_queue_spawning_count -= 1
+        logger.info(
+            "Executor pod queue extended, spawned: %s, failed to spawn: %s, current queue length: %s, still spawning: %s",
+            len(spawned_pods),
+            len(count_to_spawn - len(spawned_pods)),
+            len(self.executor_pod_queue),
+            self.executor_pod_queue_spawning_count,
+        )
+
+    @retry(
+        retry=retry_if_exception_type(RuntimeError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+    )
     async def spawn_executor_pod(self):
         """
         Create a new executor pod and return its JSON
