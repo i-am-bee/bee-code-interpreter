@@ -33,6 +33,8 @@ jobs:
     - name: Build and push bee-code-interpreter
       uses: docker/build-push-action@v6
       with:
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         context: .
         platforms: linux/amd64,linux/arm64
         push: true
@@ -43,6 +45,8 @@ jobs:
     - name: Build and push bee-code-executor
       uses: docker/build-push-action@v6
       with:
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         context: ./executor
         platforms: linux/amd64,linux/arm64
         push: true

@@ -22,6 +22,13 @@ WORKDIR /workdir
 RUN apk add --no-cache musl-dev
 COPY Cargo.toml .
 COPY Cargo.lock .
+COPY dummy.rs .
+RUN sed -i 's#server.rs#dummy.rs#' Cargo.toml
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/workdir/target/release/build \
+    --mount=type=cache,target=/workdir/target/release/deps \
+    cargo build --release
+RUN sed -i 's#dummy.rs#server.rs#' Cargo.toml
 COPY server.rs .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/workdir/target/release/build \
