@@ -40,22 +40,38 @@ RUN apk add --no-cache git make gcc g++ musl-dev && \
 FROM docker.io/alpine:${ALPINE_VERSION} AS runtime
 RUN apk add --no-cache \
     coreutils \
+    ffmpeg \
+    imagemagick \
+    pandoc-cli \
     python3 \
+    py3-jinja2 \
     py3-matplotlib \
+    py3-matplotlib-venn \
     py3-numpy \
     py3-pandas \
     py3-pillow \
     py3-pip \
     py3-scipy \
-    py3-scikit-learn \
-    py3-sympy
+    py3-sympy \
+    py3-tabulate \
+    py3-xarray \
+    texlive
 COPY --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server
 COPY --from=build-upm /go/bin/upm /usr/local/bin/upm
 COPY --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
 ENV PYPI_MAP_DB=/pypi_map.sqlite
-RUN mkdir /venv /workspace && chmod 777 /venv /workspace
+RUN mkdir /venv /workspace /mplconfigdir && chmod 777 /venv /workspace /mplconfigdir
+ENV MPLCONFIGDIR="/mplconfigdir"
 WORKDIR /workspace
 USER 1001050000
 RUN python -m venv --system-site-packages /venv
 ENV PATH="/venv/bin:$PATH"
+RUN pip install \
+    ffmpeg-python \
+    pandas[excel,plot,output-formatting,computation] \
+    pypandoc \
+    PyPDF2 \
+    python-docx \
+    python-pptx
+COPY sitecustomize.py /venv/lib/python3.12/site-packages
 ENTRYPOINT [ "executor-server" ]

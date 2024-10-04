@@ -2,3 +2,4 @@
 !Cargo.lock
 !Cargo.toml
 !server.rs
+!sitecustomize.py

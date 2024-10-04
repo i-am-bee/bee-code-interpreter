@@ -122,6 +122,7 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
     if !guessed_deps.is_empty() {
         Command::new("pip")
             .arg("install")
+            .arg("--no-cache-dir")
             .args(guessed_deps.split_whitespace())
             .output()
             .await?;
