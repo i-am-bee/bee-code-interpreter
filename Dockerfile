@@ -3,7 +3,6 @@ ARG PYTHON_VERSION="3.12"
 FROM docker.io/python:${PYTHON_VERSION} AS builder
 RUN apt-get update &&\
     apt-get install --no-install-suggests --no-install-recommends --yes pipx
-
 ENV PATH="/root/.local/bin:${PATH}"
 RUN pipx install poetry &&\
     pipx inject poetry poetry-plugin-bundle
@@ -18,4 +17,6 @@ RUN apt-get update &&\
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /venv /venv
 ENV PATH="/venv/bin:${PATH}"
+RUN mkdir /.kube && chmod 777 /.kube
+USER 1001050000
 ENTRYPOINT ["python", "-m", "code_interpreter"]
