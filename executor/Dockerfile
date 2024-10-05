@@ -81,4 +81,5 @@ RUN pip install \
     python-docx \
     python-pptx
 COPY sitecustomize.py /venv/lib/python3.12/site-packages
+ENV XDG_CACHE_HOME=/tmp/cache
 ENTRYPOINT [ "executor-server" ]
