@@ -38,6 +38,7 @@ FROM docker.io/alpine:${ALPINE_VERSION} AS runtime
 RUN apk add --no-cache \
     coreutils \
     ffmpeg \
+    font-dejavu \
     imagemagick \
     pandoc-cli \
     python3 \
@@ -52,19 +53,27 @@ RUN apk add --no-cache \
     py3-sympy \
     py3-tabulate \
     py3-xarray \
-    texlive
-COPY --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server
+    weasyprint
+RUN mkdir /workspace && chmod 777 /workspace
+WORKDIR /workspace
+USER 1001050000
+
+# Python
+COPY requirements.txt /
+RUN python -m venv --system-site-packages /tmp/venv && /tmp/venv/bin/pip install --no-cache-dir -r /requirements.txt
+COPY sitecustomize.py /venv/lib/python3.12/site-packages
+ENV PATH="/tmp/venv/bin:$PATH" \
+    MPLCONFIGDIR="/tmp/mplconfigdir"
+
+# Pandoc
+COPY pandoc-wrapper /usr/local/bin/pandoc
+
+# UPM
 COPY --from=build-upm /go/bin/upm /usr/local/bin/upm
 COPY --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
 ENV PYPI_MAP_DB=/pypi_map.sqlite
-RUN mkdir /venv /workspace /mplconfigdir && chmod 777 /venv /workspace /mplconfigdir
-ENV MPLCONFIGDIR="/mplconfigdir"
-USER 1001050000
-WORKDIR /workspace
-RUN python -m venv --system-site-packages /venv
-ENV PATH="/venv/bin:$PATH"
-COPY requirements.txt /
-RUN pip install --no-cache-dir -r /requirements.txt
-COPY sitecustomize.py /venv/lib/python3.12/site-packages
-ENV XDG_CACHE_HOME=/tmp/cache
+
+# Executor server
+COPY --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server
+
 ENTRYPOINT [ "executor-server" ]
