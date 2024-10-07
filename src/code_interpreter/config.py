@@ -59,7 +59,7 @@ class Config(BaseSettings):
     grpc_tls_ca_cert: bytes | None = None
 
     # the image to use for the executor pods
-    executor_image: str = "localhost/bee-code-interpreter-executor:local"
+    executor_image: str = "localhost/bee-code-executor:local"
 
     # 'resources' field for executor pod container
     executor_container_resources: dict = {}

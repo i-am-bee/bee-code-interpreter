@@ -14,7 +14,7 @@
 # limitations under the License.
 set -e
 docker build -t localhost/bee-code-interpreter:local .
-docker build -t localhost/bee-code-interpreter-executor:local executor
+docker build -t localhost/bee-code-executor:local executor
 kubectl delete -f k8s/local.yaml || true
 kubectl apply -f k8s/local.yaml
 kubectl wait --for=condition=Ready pod/code-interpreter-service
