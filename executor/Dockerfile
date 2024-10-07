@@ -59,7 +59,7 @@ WORKDIR /workspace
 USER 1001050000
 
 # Python
-COPY requirements.txt /
+COPY requirements.txt requirements-skip.txt /
 RUN python -m venv --system-site-packages /tmp/venv && /tmp/venv/bin/pip install --no-cache-dir -r /requirements.txt
 COPY sitecustomize.py /venv/lib/python3.12/site-packages
 ENV PATH="/tmp/venv/bin:$PATH" \

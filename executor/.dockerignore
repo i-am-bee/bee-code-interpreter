@@ -5,4 +5,5 @@
 !dummy.rs
 !sitecustomize.py
 !requirements.txt
+!requirements-skip.txt
 !pandoc-wrapper

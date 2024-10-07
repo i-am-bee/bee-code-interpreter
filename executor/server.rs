@@ -61,6 +61,15 @@ static REQUIREMENTS: std::sync::LazyLock<HashSet<String>> = std::sync::LazyLock:
                 requirements.insert(requirement);
             }
         }
+        let skip_file = tokio::fs::File::open("/requirements-skip.txt").await.unwrap();
+        let skip_reader = tokio::io::BufReader::new(skip_file);
+        let mut skip_lines = skip_reader.lines();
+        while let Some(line) = skip_lines.next_line().await.unwrap() {
+            let requirement = line.split(&['#', '['][..]).next().unwrap_or(&line).trim().to_string();
+            if !requirement.is_empty() {
+                requirements.insert(requirement);
+            }
+        }
         requirements
     })
 });
