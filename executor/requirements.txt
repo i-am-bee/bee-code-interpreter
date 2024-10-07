@@ -1,0 +1,16 @@
+ffmpeg-python
+jinja2
+matplotlib
+matplotlib-venn
+numpy
+pandas[excel,plot,output-formatting,computation]
+pillow
+pip
+pypandoc
+PyPDF2
+python-docx
+python-pptx
+scipy
+sympy
+tabulate
+xarray

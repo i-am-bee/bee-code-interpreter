@@ -17,16 +17,16 @@ use futures::StreamExt;
 use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::Path;
 use std::time::Duration;
 use tempfile::TempDir;
 use tokio_stream::wrappers::ReadDirStream;
-use tokio::fs::{self, OpenOptions};
-use tokio::io::{AsyncWriteExt};
-use tokio::process::Command;
 use tokio_util::io::ReaderStream;
+use tokio::fs::{self, OpenOptions};
+use tokio::io::{AsyncWriteExt, AsyncBufReadExt};
+use tokio::process::Command;
 
 #[derive(Serialize, Deserialize)]
 struct ExecuteRequest {
@@ -48,6 +48,22 @@ struct File {
     old_hash: Option<String>,
     new_hash: Option<String>,
 }
+
+static REQUIREMENTS: std::sync::LazyLock<HashSet<String>> = std::sync::LazyLock::new(|| {
+    tokio::runtime::Runtime::new().unwrap().block_on(async {
+        let mut requirements = HashSet::new();
+        let file = tokio::fs::File::open("/requirements.txt").await.unwrap();
+        let reader = tokio::io::BufReader::new(file);
+        let mut lines = reader.lines();
+        while let Some(line) = lines.next_line().await.unwrap() {
+            let requirement = line.split(&['#', '['][..]).next().unwrap_or(&line).trim().to_string();
+            if !requirement.is_empty() {
+                requirements.insert(requirement);
+            }
+        }
+        requirements
+    })
+});
 
 async fn upload_file(
     mut payload: web::Payload,
@@ -119,14 +135,20 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
             .stdout,
     ).trim().to_string();
 
-    if !guessed_deps.is_empty() {
+    let new_deps: Vec<&str> = guessed_deps
+        .split_whitespace()
+        .filter(|dep| !REQUIREMENTS.contains(*dep))
+        .collect();
+
+    if !new_deps.is_empty() {
         Command::new("pip")
             .arg("install")
             .arg("--no-cache-dir")
-            .args(guessed_deps.split_whitespace())
+            .args(&new_deps)
             .output()
             .await?;
     }
+    
     let timeout = Duration::from_secs(payload.timeout.unwrap_or(60));
     let (stdout, stderr, exit_code) = tokio::time::timeout(
         timeout,
@@ -174,7 +196,7 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn web() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let listen_addr = env::var("APP_LISTEN_ADDR").unwrap_or_else(|_| "0.0.0.0:8000".to_string());
 
@@ -188,4 +210,9 @@ async fn main() -> std::io::Result<()> {
     .bind(&listen_addr)?
     .run()
     .await
+}
+
+fn main() -> std::io::Result<()> {
+    std::sync::LazyLock::force(&REQUIREMENTS);
+    web()
 }
