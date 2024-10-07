@@ -20,20 +20,10 @@ ARG RUST_VERSION="1.81"
 FROM docker.io/rust:${RUST_VERSION}-alpine${ALPINE_VERSION} AS build-executor-server
 WORKDIR /workdir
 RUN apk add --no-cache musl-dev
-COPY Cargo.toml .
-COPY Cargo.lock .
-COPY dummy.rs .
-RUN sed -i 's#server.rs#dummy.rs#' Cargo.toml
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/workdir/target/release/build \
-    --mount=type=cache,target=/workdir/target/release/deps \
-    cargo build --release
-RUN sed -i 's#dummy.rs#server.rs#' Cargo.toml
-COPY server.rs .
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/workdir/target/release/build \
-    --mount=type=cache,target=/workdir/target/release/deps \
-    cargo build --release
+COPY Cargo.toml Cargo.lock dummy.rs ./
+RUN cargo build --release --bin dummy
+COPY server.rs ./
+RUN cargo build --release --bin executor-server
 
 FROM docker.io/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build-upm
 ARG UPM_VERSION
@@ -69,17 +59,12 @@ COPY --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pyp
 ENV PYPI_MAP_DB=/pypi_map.sqlite
 RUN mkdir /venv /workspace /mplconfigdir && chmod 777 /venv /workspace /mplconfigdir
 ENV MPLCONFIGDIR="/mplconfigdir"
-WORKDIR /workspace
 USER 1001050000
+WORKDIR /workspace
 RUN python -m venv --system-site-packages /venv
 ENV PATH="/venv/bin:$PATH"
-RUN pip install \
-    ffmpeg-python \
-    pandas[excel,plot,output-formatting,computation] \
-    pypandoc \
-    PyPDF2 \
-    python-docx \
-    python-pptx
+COPY requirements.txt /
+RUN pip install --no-cache-dir -r /requirements.txt
 COPY sitecustomize.py /venv/lib/python3.12/site-packages
 ENV XDG_CACHE_HOME=/tmp/cache
 ENTRYPOINT [ "executor-server" ]
