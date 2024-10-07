@@ -38,16 +38,6 @@ cmd = "python -m code_interpreter.health_check"
 [tool.poe.tasks.copyright]
 cmd = "nwa add -l apache -c \"IBM Corp.\" scripts executor/{server.rs,Dockerfile} test src examples"
 
-[tool.poe.tasks.publish]
-help = "Bump version + build and publish docker images"
-args = [{ name = "version", positional = true, required = true, multiple = false }]
-sequence = [
-    { cmd = "poetry version ${version}" },
-    { ref = "copyright" },
-    { shell = "./scripts/publish.sh" },
-    { shell = "git add . && git commit -m \"Release v${version}\" && git tag \"v${version}\" && git push origin \"v${version}\" && git push"}
-]
-
 [tool.poe.tasks.test]
 help = "Verify executor is running + run tests"
 sequence = [{ cmd = "python -m code_interpreter.health_check" }, { shell = "pytest -v test" } ]

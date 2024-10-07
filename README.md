@@ -84,10 +84,13 @@ poe test
 #### Publish a new version:
 
 ```shell
-# First ensure that your currently selected `docker buildx` builder supports multi arch, e.g. by:
-docker buildx create --use --name multi-arch-builder --driver docker-container
-
-poe publish $NEW_VERSION
+git checkout main
+git pull
+poetry version 0.0.42
+git add pyproject.toml
+git commit -m "chore: bump version to v0.0.42"
+git tag v0.0.42
+git push origin main v0.0.42
 ```
 
 ---
