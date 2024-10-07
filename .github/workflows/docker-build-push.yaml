@@ -33,23 +33,23 @@ jobs:
     - name: Build and push bee-code-interpreter
       uses: docker/build-push-action@v6
       with:
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
         context: .
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
           iambeeagent/bee-code-interpreter:latest
           iambeeagent/bee-code-interpreter:${{ steps.get_version.outputs.VERSION }}
+        cache-from: type=registry,ref=iambeeagent/bee-code-interpreter:buildcache
+        cache-to: type=registry,ref=iambeeagent/bee-code-interpreter:buildcache,mode=max
 
     - name: Build and push bee-code-executor
       uses: docker/build-push-action@v6
       with:
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
         context: ./executor
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
           iambeeagent/bee-code-executor:latest
           iambeeagent/bee-code-executor:${{ steps.get_version.outputs.VERSION }}
+        cache-from: type=registry,ref=iambeeagent/bee-code-executor:buildcache
+        cache-to: type=registry,ref=iambeeagent/bee-code-executor:buildcache,mode=max
