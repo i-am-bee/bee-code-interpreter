@@ -19,6 +19,7 @@ import logging.config
 from functools import cached_property
 
 import os
+from fastapi import FastAPI
 import grpc
 from code_interpreter.config import Config
 from code_interpreter.services.custom_tool_executor import CustomToolExecutor
@@ -26,6 +27,7 @@ from code_interpreter.services.grpc_server import GrpcServer
 from code_interpreter.services.grpc_servicers.code_interpreter_servicer import (
     CodeInterpreterServicer,
 )
+from code_interpreter.services.http_server import create_http_server
 from code_interpreter.services.kubectl import Kubectl
 from code_interpreter.services.kubernetes_code_executor import KubernetesCodeExecutor
 from code_interpreter.services.storage import Storage
@@ -111,4 +113,12 @@ class ApplicationContext:
         return GrpcServer(
             servicers=self.grpc_servicers,
             server_credentials=self.grpc_server_credentials
+        )
+
+    @cached_property
+    def http_server(self) -> FastAPI:
+        return create_http_server(
+            code_executor=self.code_executor,
+            custom_tool_executor=self.custom_tool_executor,
+            request_id_context_var=self.request_id_context_var,
         )

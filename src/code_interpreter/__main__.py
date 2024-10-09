@@ -12,13 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import aiorun
+import uvicorn
 
 from code_interpreter.application_context import ApplicationContext
 
 
 async def main():
     ctx = ApplicationContext()
-    await ctx.grpc_server.start(listen_addr=ctx.config.grpc_listen_addr)
+    await asyncio.gather(
+        uvicorn.Server(
+            uvicorn.Config(
+                ctx.http_server,
+                host=ctx.config.http_listen_addr.split(":")[0],
+                port=int(ctx.config.http_listen_addr.split(":")[1]),
+                loop="asyncio",
+            )
+        ).serve(),
+        ctx.grpc_server.start(listen_addr=ctx.config.grpc_listen_addr),
+    )
 
 aiorun.run(main())

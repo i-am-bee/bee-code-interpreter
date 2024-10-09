@@ -49,6 +49,9 @@ class Config(BaseSettings):
     # the address and port gRPC server will listen on
     grpc_listen_addr: str = "0.0.0.0:50051"
 
+    # the address and port HTTP server will listen on
+    http_listen_addr: str = "0.0.0.0:8000"
+
     # text content of the TLS certificate file
     grpc_tls_cert: bytes | None = None
 

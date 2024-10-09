@@ -36,6 +36,7 @@ spec:
     image: localhost/bee-code-interpreter:local
     ports:
     - containerPort: 50051
+    - containerPort: 8000
     env:
     - name: APP_FILE_STORAGE_PATH
       value: /storage

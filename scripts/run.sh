@@ -18,6 +18,6 @@ docker build -t localhost/bee-code-executor:local executor
 kubectl delete -f k8s/local.yaml || true
 kubectl apply -f k8s/local.yaml
 kubectl wait --for=condition=Ready pod/code-interpreter-service
-kubectl port-forward pods/code-interpreter-service 50051:50051 &
+kubectl port-forward pods/code-interpreter-service 8000:8000 50051:50051 &
 kubectl logs --follow code-interpreter-service
 wait
