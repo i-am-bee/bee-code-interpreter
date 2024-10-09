@@ -1,1 +1,2 @@
 ffmpeg # actually ffmpeg-python
+opencv-python # installed through OS package

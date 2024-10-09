@@ -129,7 +129,7 @@ async fn get_file_hashes(dir: &str) -> HashMap<String, String> {
     hashes
 }
 
-async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Error> {
+async fn execute(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Error> {
     let workspace = env::var("APP_WORKSPACE").unwrap_or_else(|_| "/workspace".to_string());
     let before_hashes = get_file_hashes(&workspace).await;
     let source_dir = TempDir::new()?;
@@ -161,7 +161,7 @@ async fn execute_python(payload: web::Json<ExecuteRequest>) -> Result<HttpRespon
     let timeout = Duration::from_secs(payload.timeout.unwrap_or(60));
     let (stdout, stderr, exit_code) = tokio::time::timeout(
         timeout,
-        Command::new("python")
+        Command::new("xonsh") // TODO: manually switch between python and shell for ~80ms perf gain
             .arg(source_dir.path().join("script.py"))
             .output(),
     )
@@ -214,7 +214,7 @@ async fn web() -> std::io::Result<()> {
             .wrap(Logger::default())
             .route("/workspace/{path:.*}", web::put().to(upload_file))
             .route("/workspace/{path:.*}", web::get().to(download_file))
-            .route("/execute", web::post().to(execute_python))
+            .route("/execute", web::post().to(execute))
     })
     .bind(&listen_addr)?
     .run()

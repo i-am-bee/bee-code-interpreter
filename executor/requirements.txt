@@ -3,14 +3,15 @@ jinja2
 matplotlib
 matplotlib-venn
 numpy
+moviepy
 pandas[excel,plot,output-formatting,computation]
 pillow
-pip
 pypandoc
-PyPDF2
+pikepdf
 python-docx
 python-pptx
 scipy
 sympy
 tabulate
 xarray
+xonsh

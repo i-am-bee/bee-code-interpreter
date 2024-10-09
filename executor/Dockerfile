@@ -35,24 +35,48 @@ RUN apk add --no-cache git make gcc g++ musl-dev && \
     make install
 
 FROM docker.io/alpine:${ALPINE_VERSION} AS runtime
-RUN apk add --no-cache \
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    bash \
     coreutils \
     ffmpeg \
     font-dejavu \
+    ghostscript-fonts \
     imagemagick \
+    opencv \
     pandoc-cli \
     python3 \
+    py3-ffmpeg \
+    py3-ffmpeg-pyc \
     py3-jinja2 \
+    py3-jinja2-pyc \
     py3-matplotlib \
+    py3-matplotlib-pyc \
     py3-matplotlib-venn \
+    py3-matplotlib-venn-pyc \
+    py3-moviepy \
+    py3-moviepy-pyc \
     py3-numpy \
+    py3-numpy-pyc \
+    py3-opencv \
+    py3-opencv-pyc \
     py3-pandas \
+    py3-pandas-pyc \
+    py3-pikepdf \
+    py3-pikepdf-pyc \
     py3-pillow \
+    py3-pillow-pyc \
     py3-pip \
+    py3-pip-pyc \
+    py3-pypandoc \
+    py3-pypandoc-pyc \
     py3-scipy \
+    py3-scipy-pyc \
     py3-sympy \
+    py3-sympy-pyc \
     py3-tabulate \
+    py3-tabulate-pyc \
     py3-xarray \
+    py3-xarray-pyc \
     weasyprint
 RUN mkdir /workspace && chmod 777 /workspace
 WORKDIR /workspace
@@ -61,12 +85,20 @@ USER 1001050000
 # Python
 COPY requirements.txt requirements-skip.txt /
 RUN python -m venv --system-site-packages /tmp/venv && /tmp/venv/bin/pip install --no-cache-dir -r /requirements.txt
-COPY sitecustomize.py /venv/lib/python3.12/site-packages
+COPY sitecustomize.py /tmp/venv/lib/python3.12/site-packages
 ENV PATH="/tmp/venv/bin:$PATH" \
-    MPLCONFIGDIR="/tmp/mplconfigdir"
+    MPLCONFIGDIR="/tmp/mplconfigdir" \
+    XDG_CACHE_HOME="/tmp/.cache" \
+    HOME="/tmp/home"
 
 # Pandoc
 COPY pandoc-wrapper /usr/local/bin/pandoc
+
+# ffmpeg
+COPY ffmpeg-wrapper /usr/local/bin/ffmpeg
+
+# xonsh
+ENV XONSH_SHOW_TRACEBACK=True
 
 # UPM
 COPY --from=build-upm /go/bin/upm /usr/local/bin/upm
