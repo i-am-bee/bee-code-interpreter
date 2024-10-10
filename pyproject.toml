@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bee-code-interpreter"
-version = "0.0.17"
+version = "0.0.18"
 license = "Apache-2.0"
 description = "A gRPC service intended as a backend for an LLM that can run arbitrary pieces of Python code."
 authors = [ "Jan Pokorný <jan.pokorny@ibm.com>", "Tomáš Dvořák <tomas.dvorak@ibm.com>" ]
