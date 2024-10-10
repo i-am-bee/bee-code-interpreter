@@ -51,8 +51,6 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     py3-jinja2-pyc \
     py3-matplotlib \
     py3-matplotlib-pyc \
-    py3-matplotlib-venn \
-    py3-matplotlib-venn-pyc \
     py3-moviepy \
     py3-moviepy-pyc \
     py3-numpy \
@@ -77,7 +75,8 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     py3-tabulate-pyc \
     py3-xarray \
     py3-xarray-pyc \
-    weasyprint
+    weasyprint \
+    yt-dlp
 RUN mkdir /workspace /venv && chmod 777 /workspace /venv
 WORKDIR /workspace
 USER 1001050000

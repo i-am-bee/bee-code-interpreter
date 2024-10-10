@@ -1,15 +1,13 @@
 ffmpeg-python
 jinja2
 matplotlib
-matplotlib-venn
 numpy
 moviepy
 pandas[excel,plot,output-formatting,computation]
 pillow
 pypandoc
+PyPDF2
 pikepdf
-python-docx
-python-pptx
 scipy
 sympy
 tabulate
