@@ -78,15 +78,15 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     py3-xarray \
     py3-xarray-pyc \
     weasyprint
-RUN mkdir /workspace && chmod 777 /workspace
+RUN mkdir /workspace /venv && chmod 777 /workspace /venv
 WORKDIR /workspace
 USER 1001050000
 
 # Python
 COPY requirements.txt requirements-skip.txt /
-RUN python -m venv --system-site-packages /tmp/venv && /tmp/venv/bin/pip install --no-cache-dir -r /requirements.txt
-COPY sitecustomize.py /tmp/venv/lib/python3.12/site-packages
-ENV PATH="/tmp/venv/bin:$PATH" \
+RUN python -m venv --system-site-packages /venv && /venv/bin/pip install --no-cache-dir -r /requirements.txt
+COPY sitecustomize.py /venv/lib/python3.12/site-packages
+ENV PATH="/venv/bin:$PATH" \
     MPLCONFIGDIR="/tmp/mplconfigdir" \
     XDG_CACHE_HOME="/tmp/.cache" \
     HOME="/tmp/home"
