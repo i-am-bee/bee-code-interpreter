@@ -84,13 +84,14 @@ poe test
 #### Publish a new version:
 
 ```shell
+VERSION=...
 git checkout main
 git pull
-poetry version 0.0.42
+poetry version $VERSION
 git add pyproject.toml
-git commit -m "chore: bump version to v0.0.42"
-git tag v0.0.42
-git push origin main v0.0.42
+git commit -m "chore: bump version to v$VERSION"
+git tag v$VERSION
+git push origin main v$VERSION
 ```
 
 ---
