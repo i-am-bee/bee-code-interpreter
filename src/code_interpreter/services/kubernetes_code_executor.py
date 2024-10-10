@@ -125,7 +125,7 @@ class KubernetesCodeExecutor:
                 if file["old_hash"] != file["new_hash"] and file["new_hash"]
             }
 
-            async def download_file(file_path, file_hash):
+            async def download_file(file_path, file_hash) -> str:
                 if await self.file_storage.exists(file_hash):
                     return
                 async with self.file_storage.writer() as stored_file, client.stream(
@@ -135,20 +135,24 @@ class KubernetesCodeExecutor:
                     pod_file.raise_for_status()
                     async for chunk in pod_file.aiter_bytes():
                         await stored_file.write(chunk)
+                return file_path, stored_file.hash
 
             logger.info("Collecting %s changed files", len(changed_files))
-            await asyncio.gather(
-                *(
-                    download_file(file_path, file_hash)
-                    for file_path, file_hash in changed_files.items()
+            stored_files = {
+                stored_file_path: stored_file_hash
+                for stored_file_path, stored_file_hash in await asyncio.gather(
+                    *(
+                        download_file(file_path, file_hash)
+                        for file_path, file_hash in changed_files.items()
+                    )
                 )
-            )
+            }
 
             return KubernetesCodeExecutor.Result(
                 stdout=response["stdout"],
                 stderr=response["stderr"],
                 exit_code=response["exit_code"],
-                files=changed_files,
+                files=stored_files,
             )
 
     async def fill_executor_pod_queue(self):

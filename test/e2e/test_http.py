@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-import hashlib
 import pytest
 import httpx
 from code_interpreter.config import Config
@@ -47,7 +46,6 @@ def test_ad_hoc_import(http_client: httpx.Client):
 
 def test_create_file_in_interpreter(http_client: httpx.Client, config: Config):
     file_content = "Hello, World!"
-    file_hash = hashlib.sha256(file_content.encode()).hexdigest()
 
     # Create the file in the workspace
     response = http_client.post(
@@ -64,7 +62,6 @@ with open('file.txt', 'w') as f:
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["exit_code"] == 0
-    assert response_json["files"]["/workspace/file.txt"] == file_hash
 
     # Read the file back
     response = http_client.post(
@@ -74,7 +71,9 @@ with open('file.txt', 'w') as f:
 with open('file.txt', 'r') as f:
     print(f.read())
 """,
-            "files": {"/workspace/file.txt": file_hash},
+            "files": {
+                "/workspace/file.txt": response_json["files"]["/workspace/file.txt"]
+            },
         },
     )
 

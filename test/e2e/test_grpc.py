@@ -14,7 +14,6 @@
 import json
 from pathlib import Path
 import grpc
-import hashlib
 import pytest
 from code_interpreter.config import Config
 from proto.code_interpreter.v1.code_interpreter_service_pb2 import (
@@ -80,7 +79,6 @@ def test_create_file_in_interpreter(
     grpc_stub: CodeInterpreterServiceStub, config: Config
 ):
     file_content = "Hello, World!"
-    file_hash = hashlib.sha256(file_content.encode()).hexdigest()
 
     response: ExecuteResponse = grpc_stub.Execute(
         ExecuteRequest(
@@ -92,7 +90,6 @@ with open('file.txt', 'w') as f:
     )
 
     assert response.exit_code == 0
-    assert response.files["/workspace/file.txt"] == file_hash
 
     response: ExecuteResponse = grpc_stub.Execute(
         ExecuteRequest(
@@ -100,7 +97,7 @@ with open('file.txt', 'w') as f:
 with open('file.txt', 'r') as f:
     print(f.read())
 """,
-            files={"/workspace/file.txt": file_hash},
+            files={"/workspace/file.txt": response.files["/workspace/file.txt"]},
         )
     )
     assert response.exit_code == 0
