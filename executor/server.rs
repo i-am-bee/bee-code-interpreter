@@ -157,12 +157,14 @@ async fn execute(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Err
             .output()
             .await?;
     }
+
+    tokio::fs::rename(source_dir.path().join("script.py"), source_dir.path().join("script.xsh")).await?;
     
     let timeout = Duration::from_secs(payload.timeout.unwrap_or(60));
     let (stdout, stderr, exit_code) = tokio::time::timeout(
         timeout,
         Command::new("xonsh") // TODO: manually switch between python and shell for ~80ms perf gain
-            .arg(source_dir.path().join("script.py"))
+            .arg(source_dir.path().join("script.xsh"))
             .output(),
     )
     .await
