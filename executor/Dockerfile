@@ -96,6 +96,7 @@ COPY pandoc-wrapper /usr/local/bin/pandoc
 
 # ffmpeg
 COPY ffmpeg-wrapper /usr/local/bin/ffmpeg
+ENV IMAGEIO_FFMPEG_EXE=/usr/bin/ffmpeg
 
 # xonsh
 ENV XONSH_SHOW_TRACEBACK=True
