@@ -1,13 +1,26 @@
-# LLM tends to generate `.show()` which does not work in a headless environment
-import matplotlib.pyplot
-matplotlib.pyplot.show = lambda *_args, **_kwargs: matplotlib.pyplot.savefig("plot.png")
+import sys
 
-# Disable progressbar for MoviePy which fills up the context window
-import moviepy.editor
+original_import = __import__
 
-old_moviepy_editor_VideoClip_write_videofile = moviepy.editor.VideoClip.write_videofile
-moviepy.editor.VideoClip.write_videofile = (
-    lambda self, *args, **kwargs: old_moviepy_editor_VideoClip_write_videofile(
-        self, *args, verbose=False, logger=None, **kwargs
-    )
-)
+
+def patched_import(name, globals=None, locals=None, fromlist=(), level=0):
+    module = original_import(name, globals, locals, fromlist, level)
+
+    if name == "matplotlib.pyplot":
+        sys.modules["matplotlib.pyplot"].show = lambda: sys.modules[
+            "matplotlib.pyplot"
+        ].savefig("plot.png")
+    elif name == "moviepy.editor":
+        original_write_videofile = sys.modules[
+            "moviepy.editor"
+        ].VideoClip.write_videofile
+        sys.modules["moviepy.editor"].VideoClip.write_videofile = (
+            lambda self, *args, **kwargs: original_write_videofile(
+                self, *args, verbose=False, logger=None, **kwargs
+            )
+        )
+
+    return module
+
+
+__builtins__["__import__"] = patched_import
