@@ -20,7 +20,6 @@ import httpx
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import AsyncGenerator, Mapping
-
 from frozendict import frozendict
 from pydantic import validate_call
 from tenacity import (
@@ -29,6 +28,8 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+import random
+import string
 
 from code_interpreter.services.kubectl import Kubectl
 from code_interpreter.services.storage import Storage
@@ -59,6 +60,7 @@ class KubernetesCodeExecutor:
         file_storage: Storage,
         executor_pod_spec_extra: dict,
         executor_pod_queue_target_length: int,
+        executor_pod_name_prefix: str,
     ) -> None:
         self.kubectl = kubectl
         self.executor_image = executor_image
@@ -69,6 +71,7 @@ class KubernetesCodeExecutor:
         self.executor_pod_queue_target_length = executor_pod_queue_target_length
         self.executor_pod_queue_spawning_count = 0
         self.executor_pod_queue = collections.deque()
+        self.executor_pod_name_prefix = executor_pod_name_prefix
 
     @retry(
         retry=retry_if_exception_type(RuntimeError),
@@ -202,44 +205,49 @@ class KubernetesCodeExecutor:
         """
         if self.self_pod is None:
             self.self_pod = await self.kubectl.get("pod", os.environ["HOSTNAME"])
-        pod = await self.kubectl.create(
-            filename="-",
-            input={
-                "apiVersion": "v1",
-                "kind": "Pod",
-                "metadata": {
-                    "generateName": "code-interpreter-executor-",
-                    "labels": {
-                        "app": "code-interpreter-executor",
+
+        try:
+            name = self.executor_pod_name_prefix + "".join(
+                random.choice(string.ascii_lowercase + string.digits) for _ in range(6)
+            )
+
+            pod = await self.kubectl.create(
+                filename="-",
+                input={
+                    "apiVersion": "v1",
+                    "kind": "Pod",
+                    "metadata": {
+                        "name": name,
+                        "ownerReferences": [
+                            {
+                                "apiVersion": "v1",
+                                "kind": "Pod",
+                                "name": self.self_pod["metadata"]["name"],
+                                "uid": self.self_pod["metadata"]["uid"],
+                                "controller": True,
+                                "blockOwnerDeletion": False,
+                            }
+                        ],
                     },
-                    "ownerReferences": [
-                        {
-                            "apiVersion": "v1",
-                            "kind": "Pod",
-                            "name": self.self_pod["metadata"]["name"],
-                            "uid": self.self_pod["metadata"]["uid"],
-                            "controller": True,
-                            "blockOwnerDeletion": False,
-                        }
-                    ],
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "executor",
+                                "image": self.executor_image,
+                                "resources": self.container_resources,
+                                "ports": [{"containerPort": 8000}],
+                            }
+                        ],
+                        **self.executor_pod_spec_extra,
+                    },
                 },
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "executor",
-                            "image": self.executor_image,
-                            "resources": self.container_resources,
-                            "ports": [{"containerPort": 8000}],
-                        }
-                    ],
-                    **self.executor_pod_spec_extra,
-                },
-            },
-        )
-        pod = await self.kubectl.wait(
-            "pod", pod["metadata"]["name"], _for="condition=Ready"
-        )
-        return pod
+            )
+            return await self.kubectl.wait("pod", name, _for="condition=Ready")
+        except Exception:
+            try:
+                await self.kubectl.delete("pod", name)
+            finally:
+                pass
 
     @asynccontextmanager
     async def executor_pod(self) -> AsyncGenerator[dict, None]:

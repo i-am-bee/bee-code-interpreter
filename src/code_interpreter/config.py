@@ -75,3 +75,6 @@ class Config(BaseSettings):
 
     # how many executor pods to keep ready for immediate use
     executor_pod_queue_target_length: int = 5
+
+    # first part of executor pod name, followed by number
+    executor_pod_name_prefix: str = "code-executor-"

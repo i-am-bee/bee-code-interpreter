@@ -78,6 +78,7 @@ class ApplicationContext:
             file_storage=self.file_storage,
             executor_pod_spec_extra=self.config.executor_pod_spec_extra,
             executor_pod_queue_target_length=self.config.executor_pod_queue_target_length,
+            executor_pod_name_prefix=self.config.executor_pod_name_prefix,
         )
         asyncio.create_task(code_executor.fill_executor_pod_queue())
         return code_executor
