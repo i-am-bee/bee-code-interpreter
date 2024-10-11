@@ -66,7 +66,7 @@ class Kubectl:
             ]
             + list(args[dashdash_position:])
         )
-        logger.info(f"kubectl {shlex.join(all_args)}")
+        logger.info("kubectl %s", shlex.join(all_args))
         return await asyncio.create_subprocess_exec(
             "kubectl",
             *all_args,

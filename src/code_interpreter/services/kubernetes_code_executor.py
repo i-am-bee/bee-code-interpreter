@@ -180,7 +180,7 @@ class KubernetesCodeExecutor:
                 self.executor_pod_queue.append(await pod_spawn_task)
                 spawned_pods += 1
             except Exception as e:
-                logger.error(f"Failed to spawn executor pod: {e}")
+                logger.error("Failed to spawn executor pod:", e)
             finally:
                 self.executor_pod_queue_spawning_count -= 1
         logger.info(
