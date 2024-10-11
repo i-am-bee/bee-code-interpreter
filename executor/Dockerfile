@@ -40,7 +40,6 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     bash \
     coreutils \
     ffmpeg \
-    font-dejavu \
     ghostscript-fonts \
     imagemagick \
     opencv \
@@ -87,7 +86,9 @@ RUN echo "executor:x:${UID}:${UID}::/home/executor:" >> /etc/passwd && \
     mkdir -p /home/executor /workspace /venv && \
     chown -R executor:executor /home/executor /workspace /venv
 USER executor
-WORKDIR /workspace
+
+# fontconfig
+RUN fc-cache -fv
 
 # Python
 COPY requirements.txt requirements-skip.txt /
@@ -113,4 +114,5 @@ ENV PYPI_MAP_DB=/pypi_map.sqlite
 # Executor server
 COPY --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server
 
+WORKDIR /workspace
 ENTRYPOINT [ "executor-server" ]
