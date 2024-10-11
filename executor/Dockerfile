@@ -16,6 +16,7 @@ ARG GO_VERSION="1.23"
 ARG UPM_VERSION="2.5.2"
 ARG ALPINE_VERSION="3.20"
 ARG RUST_VERSION="1.81"
+ARG UID="1001050000"
 
 FROM docker.io/rust:${RUST_VERSION}-alpine${ALPINE_VERSION} AS build-executor-server
 WORKDIR /workdir
@@ -77,18 +78,22 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     py3-xarray-pyc \
     weasyprint \
     yt-dlp
-RUN mkdir /workspace /venv && chmod 777 /workspace /venv
+
+# Create user manually -- Alpine does not support high UIDs
+ARG UID
+RUN echo "executor:x:${UID}:${UID}::/home/executor:" >> /etc/passwd && \
+    echo "executor:!::0:::::" >> /etc/shadow && \
+    echo "executor:x:${UID}:" >> /etc/group && \
+    mkdir -p /home/executor /workspace /venv && \
+    chown -R executor:executor /home/executor /workspace /venv
+USER executor
 WORKDIR /workspace
-USER 1001050000
 
 # Python
 COPY requirements.txt requirements-skip.txt /
 RUN python -m venv --system-site-packages /venv && /venv/bin/pip install --no-cache-dir -r /requirements.txt
 COPY sitecustomize.py /venv/lib/python3.12/site-packages
-ENV PATH="/venv/bin:$PATH" \
-    MPLCONFIGDIR="/tmp/mplconfigdir" \
-    XDG_CACHE_HOME="/tmp/.cache" \
-    HOME="/tmp/home"
+ENV PATH="/venv/bin:$PATH"
 
 # Pandoc
 COPY pandoc-wrapper /usr/local/bin/pandoc
