@@ -13,10 +13,9 @@
 # limitations under the License.
 
 from contextlib import asynccontextmanager
-import hashlib
 import secrets
 from typing import AsyncIterator, Protocol
-from anyio import AsyncFile, Path
+from anyio import Path
 from pydantic import validate_call
 
 from code_interpreter.utils.validation import Hash
@@ -27,8 +26,9 @@ class ObjectReader(Protocol):
 
 
 class ObjectWriter(Protocol):
+    hash: str
+
     async def write(self, data: bytes) -> None: ...
-    def hash(self) -> str: ...
 
 
 class Storage:
@@ -46,38 +46,13 @@ class Storage:
         """
         Async context manager for writing a new object to the storage.
 
-        Internally, we write to a temporary file first, then rename it to the final name after writing is complete.
-        This is because the file hash is computed on-the-fly as the data is written.
-        This is internally done by wrapping the `write` function of the returned `ObjectWriter` to also call update the hash.
-        The final hash can be retrieved by using the `.hash()` method after the writing is completed.
+        The final hash can be retrieved by using the `.hash` attribute
         """
-
-        class _AsyncFileWrapper:
-            def __init__(self, file: AsyncFile[bytes]):
-                self._file = file
-                self._hash = hashlib.sha256()
-
-            async def write(self, data: bytes) -> None:
-                self._hash.update(data)
-                await self._file.write(data)
-
-            def hash(self) -> str:
-                return self._hash.hexdigest()
-
         await self.storage_path.mkdir(parents=True, exist_ok=True)
-        tmp_name = f"tmp-{secrets.token_hex(32)}"
-        tmp_file = self.storage_path / tmp_name
-        try:
-            async with await tmp_file.open("wb") as f:
-                wrapped_file = _AsyncFileWrapper(f)
-                yield wrapped_file
-            final_name = wrapped_file.hash()
-            final_file = self.storage_path / final_name
-            if not await final_file.exists():
-                await tmp_file.rename(final_file)
-        finally:
-            if await tmp_file.exists():
-                await tmp_file.unlink()
+        hash = secrets.token_hex(32)
+        async with await (self.storage_path / hash).open("wb") as file:
+            file.__setattr__("hash", hash)
+            yield file
 
     async def write(self, data: bytes) -> str:
         """
@@ -85,7 +60,7 @@ class Storage:
         """
         async with self.writer() as f:
             await f.write(data)
-            return f.hash()
+            return f.hash
 
     @asynccontextmanager
     @validate_call
