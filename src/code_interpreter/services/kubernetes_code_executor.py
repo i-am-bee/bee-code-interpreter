@@ -182,8 +182,8 @@ class KubernetesCodeExecutor:
             try:
                 self.executor_pod_queue.append(await pod_spawn_task)
                 spawned_pods += 1
-            except Exception as e:
-                logger.error("Failed to spawn executor pod:", e)
+            except Exception:
+                logger.exception("Failed to spawn executor pod")
             finally:
                 self.executor_pod_queue_spawning_count -= 1
         logger.info(
@@ -211,7 +211,7 @@ class KubernetesCodeExecutor:
                 random.choice(string.ascii_lowercase + string.digits) for _ in range(6)
             )
 
-            pod = await self.kubectl.create(
+            await self.kubectl.create(
                 filename="-",
                 input={
                     "apiVersion": "v1",
@@ -242,12 +242,14 @@ class KubernetesCodeExecutor:
                     },
                 },
             )
-            return await self.kubectl.wait("pod", name, _for="condition=Ready")
+            return await self.kubectl.wait(
+                "pod", name, _for="condition=Ready", timeout="60s"
+            )
         except Exception:
             try:
                 await self.kubectl.delete("pod", name)
             finally:
-                pass
+                raise RuntimeError("Failed to spawn the pod")
 
     @asynccontextmanager
     async def executor_pod(self) -> AsyncGenerator[dict, None]:

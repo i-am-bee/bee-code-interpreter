@@ -97,7 +97,7 @@ def create_http_server(
                 files=request.files,
             )
         except Exception as e:
-            logger.error("Error executing code: %s", e)
+            logger.exception("Error executing code")
             raise HTTPException(status_code=500, detail=str(e))
         logger.info("Code execution completed with result %s", result)
         return result

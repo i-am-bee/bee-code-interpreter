@@ -47,7 +47,9 @@ class CodeInterpreterServicer(code_interpreter_pb2_grpc.CodeInterpreterServiceSe
         try:
             protovalidate.validate(request)
         except protovalidate.ValidationError as e:
-            logger.warning("Invalid request: error %s when validating %s", e, request)
+            logger.warning(
+                "Invalid request: error when validating %s", request, exc_info=True
+            )
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e.errors()))
 
     async def Execute(
@@ -67,7 +69,7 @@ class CodeInterpreterServicer(code_interpreter_pb2_grpc.CodeInterpreterServiceSe
                 files=request.files,
             )
         except Exception as e:
-            logger.error("Error executing code: %s", e)
+            logger.exception("Error executing code")
             raise e
 
         logger.info("Code execution completed with result %s", result)
