@@ -122,15 +122,7 @@ class KubernetesCodeExecutor:
                 )
             ).json()
 
-            changed_files = {
-                file["path"]: file["new_hash"]
-                for file in response["files"]
-                if file["old_hash"] != file["new_hash"] and file["new_hash"]
-            }
-
-            async def download_file(file_path, file_hash) -> str:
-                if await self.file_storage.exists(file_hash):
-                    return
+            async def download_file(file_path) -> str:
                 async with self.file_storage.writer() as stored_file, client.stream(
                     "GET",
                     f"http://{executor_pod_ip}:8000/workspace/{file_path.removeprefix("/workspace/")}",
@@ -140,14 +132,11 @@ class KubernetesCodeExecutor:
                         await stored_file.write(chunk)
                 return file_path, stored_file.hash
 
-            logger.info("Collecting %s changed files", len(changed_files))
+            logger.info("Collecting %s changed files", len(response["files"]))
             stored_files = {
                 stored_file_path: stored_file_hash
                 for stored_file_path, stored_file_hash in await asyncio.gather(
-                    *(
-                        download_file(file_path, file_hash)
-                        for file_path, file_hash in changed_files.items()
-                    )
+                    *(download_file(file_path) for file_path in response["files"])
                 )
             }
 

@@ -62,6 +62,7 @@ with open('file.txt', 'w') as f:
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["exit_code"] == 0
+    assert response_json["files"].keys() == {"/workspace/file.txt"}
 
     # Read the file back
     response = http_client.post(
@@ -81,6 +82,7 @@ with open('file.txt', 'r') as f:
     response_json = response.json()
     assert response_json["exit_code"] == 0
     assert response_json["stdout"] == file_content + "\n"
+    assert not response_json["files"]
 
 
 def test_parse_custom_tool_success(http_client: httpx.Client):

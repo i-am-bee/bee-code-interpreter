@@ -90,6 +90,7 @@ with open('file.txt', 'w') as f:
     )
 
     assert response.exit_code == 0
+    assert response.files.keys() == {"/workspace/file.txt"}
 
     response: ExecuteResponse = grpc_stub.Execute(
         ExecuteRequest(
@@ -102,6 +103,7 @@ with open('file.txt', 'r') as f:
     )
     assert response.exit_code == 0
     assert response.stdout == file_content + "\n"
+    assert not response.files
 
 
 def test_parse_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):

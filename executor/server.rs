@@ -14,16 +14,12 @@
 
 use actix_web::{middleware::Logger, web, App, Error, HttpResponse, HttpServer};
 use futures::StreamExt;
-use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::env;
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tempfile::TempDir;
-use tokio_stream::wrappers::ReadDirStream;
-use tokio_util::io::ReaderStream;
 use tokio::fs::{self, OpenOptions};
 use tokio::io::{AsyncWriteExt, AsyncBufReadExt};
 use tokio::process::Command;
@@ -39,14 +35,7 @@ struct ExecuteResult {
     stdout: String,
     stderr: String,
     exit_code: i32,
-    files: Vec<File>,
-}
-
-#[derive(Serialize)]
-struct File {
-    path: String,
-    old_hash: Option<String>,
-    new_hash: Option<String>,
+    files: Vec<String>,
 }
 
 static REQUIREMENTS: std::sync::LazyLock<HashSet<String>> = std::sync::LazyLock::new(|| {
@@ -103,35 +92,30 @@ async fn download_file(path: web::Path<String>) -> Result<HttpResponse, Error> {
         .streaming(tokio_util::io::ReaderStream::new(file)))
 }
 
-async fn calculate_sha256(path: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let file = tokio::fs::File::open(path).await?;
-    let stream = ReaderStream::new(file);
-    let mut hasher = Sha256::new();
-    let mut stream = stream.map_err(|e: std::io::Error| e);
-    while let Some(chunk) = stream.try_next().await? { hasher.update(&chunk); }
-    Ok(format!("{:x}", hasher.finalize()))
-}
-
-async fn get_file_hashes(dir: &str) -> HashMap<String, String> {
-    let mut hashes = HashMap::new();
-    let mut entries = ReadDirStream::new(tokio::fs::read_dir(dir).await.unwrap());
-    while let Some(Ok(entry)) = entries.next().await {
+async fn get_modified_files(dir: &str, since: SystemTime) -> Vec<String> {
+    let mut modified_files = Vec::new();
+    let mut read_dir = fs::read_dir(dir).await.unwrap();
+    while let Some(entry) = read_dir.next_entry().await.unwrap() {
         let path = entry.path();
         if !path.is_file() {
             continue;
         }
-        if let Some(path_str) = path.to_str() {
-            if let Ok(hash) = calculate_sha256(path_str).await {
-                hashes.insert(path_str.to_string(), hash);
+        if let Ok(metadata) = entry.metadata().await {
+            if let Ok(modified) = metadata.modified() {
+                if modified > since {
+                    if let Some(path_str) = path.to_str() {
+                        modified_files.push(path_str.to_string());
+                    }
+                }
             }
         }
     }
-    hashes
+    modified_files
 }
 
 async fn execute(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Error> {
     let workspace = env::var("APP_WORKSPACE").unwrap_or_else(|_| "/workspace".to_string());
-    let before_hashes = get_file_hashes(&workspace).await;
+    let execution_start_time = SystemTime::now();
     let source_dir = TempDir::new()?;
     
     tokio::fs::write(source_dir.path().join("script.py"), &payload.source_code).await?;
@@ -178,25 +162,8 @@ async fn execute(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Err
         })
     })
     .unwrap_or_else(|_| Ok((String::new(), "Execution timed out".to_string(), -1)))?;
-    let after_hashes = get_file_hashes(&workspace).await;
-    let files = before_hashes
-        .iter()
-        .map(|(path, old_hash)| File {
-            path: path.clone(),
-            old_hash: Some(old_hash.clone()),
-            new_hash: after_hashes.get(path).cloned(),
-        })
-        .chain(
-            after_hashes
-                .iter()
-                .filter(|(path, _)| !before_hashes.contains_key(*path))
-                .map(|(path, new_hash)| File {
-                    path: path.clone(),
-                    old_hash: None,
-                    new_hash: Some(new_hash.clone()),
-                }),
-        )
-        .collect();
+    
+    let files = get_modified_files(&workspace, execution_start_time).await;
 
     Ok(HttpResponse::Ok().json(ExecuteResult {
         stdout,
