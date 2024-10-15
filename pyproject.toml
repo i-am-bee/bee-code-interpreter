@@ -10,18 +10,18 @@ packages = [ { include = "code_interpreter", from = "src" }, { include = "proto"
 python = "^3.12"
 
 aiorun = "^2024.8.1"
-anyio = "^4.6.0"
-frozendict = "^2.4.4"
+anyio = "^4.6.2.post1"
+frozendict = "^2.4.6"
 grpcio = "^1.66.2"
 grpcio-reflection = "^1.66.2"
 protobuf = "5.27.2" # NOTE: needs to be in sync with generated code
-protovalidate = "^0.4.0"
+protovalidate = "^0.4.0" # NOTE: breaking change in 0.5.0 w.r.t. generated code
 pydantic = "^2.9.2"
 pydantic-settings = "^2.5.2"
 tenacity = "^9.0.0"
 httpx = "^0.27.2"
-fastapi = "^0.115.0"
-uvicorn = "^0.31.0"
+fastapi = "^0.115.2"
+uvicorn = "^0.31.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
