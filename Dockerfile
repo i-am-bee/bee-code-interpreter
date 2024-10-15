@@ -17,6 +17,5 @@ RUN apt-get update &&\
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /venv /venv
 ENV PATH="/venv/bin:${PATH}"
-RUN mkdir /.kube /storage && chmod 777 /.kube /storage
-USER 1001050000
+RUN mkdir /storage && chmod 777 /storage
 ENTRYPOINT ["python", "-m", "code_interpreter"]
