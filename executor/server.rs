@@ -23,6 +23,8 @@ use tempfile::TempDir;
 use tokio::fs::{self, OpenOptions};
 use tokio::io::{AsyncWriteExt, AsyncBufReadExt};
 use tokio::process::Command;
+use std::os::unix::fs::MetadataExt;
+use std::time::UNIX_EPOCH;
 
 #[derive(Serialize, Deserialize)]
 struct ExecuteRequest {
@@ -92,8 +94,8 @@ async fn download_file(path: web::Path<String>) -> Result<HttpResponse, Error> {
         .streaming(tokio_util::io::ReaderStream::new(file)))
 }
 
-async fn get_modified_files(dir: &str, since: SystemTime) -> Vec<String> {
-    let mut modified_files = Vec::new();
+async fn get_changed_files(dir: &str, since: SystemTime) -> Vec<String> {
+    let mut changed_files = Vec::new();
     let mut read_dir = fs::read_dir(dir).await.unwrap();
     while let Some(entry) = read_dir.next_entry().await.unwrap() {
         let path = entry.path();
@@ -101,16 +103,17 @@ async fn get_modified_files(dir: &str, since: SystemTime) -> Vec<String> {
             continue;
         }
         if let Ok(metadata) = entry.metadata().await {
-            if let Ok(modified) = metadata.modified() {
-                if modified > since {
-                    if let Some(path_str) = path.to_str() {
-                        modified_files.push(path_str.to_string());
-                    }
+            let ctime = metadata.ctime();
+            let ctime_nanos = metadata.ctime_nsec();
+            let change_time = UNIX_EPOCH + Duration::new(ctime as u64, ctime_nanos as u32);
+            if change_time > since {
+                if let Some(path_str) = path.to_str() {
+                    changed_files.push(path_str.to_string());
                 }
             }
         }
     }
-    modified_files
+    changed_files
 }
 
 async fn execute(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Error> {
@@ -163,7 +166,7 @@ async fn execute(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Err
     })
     .unwrap_or_else(|_| Ok((String::new(), "Execution timed out".to_string(), -1)))?;
     
-    let files = get_modified_files(&workspace, execution_start_time).await;
+    let files = get_changed_files(&workspace, execution_start_time).await;
 
     Ok(HttpResponse::Ok().json(ExecuteResult {
         stdout,
