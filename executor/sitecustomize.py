@@ -19,6 +19,11 @@ def patched_import(name, globals=None, locals=None, fromlist=(), level=0):
                 self, *args, verbose=False, logger=None, **kwargs
             )
         )
+    elif name == "PIL":
+        original_import("PIL.ImageShow", globals, locals, fromlist, level)
+        sys.modules["PIL.ImageShow"].show = lambda img, *args, **kwargs: img.save(
+            "image.png"
+        )
 
     return module
 
