@@ -16,6 +16,7 @@ ARG GO_VERSION="1.23"
 ARG UPM_VERSION="2.5.2"
 ARG ALPINE_VERSION="3.20"
 ARG RUST_VERSION="1.81"
+ARG PYTHON_VERSION="3.12"
 ARG UID="1001050000"
 
 FROM docker.io/rust:${RUST_VERSION}-alpine${ALPINE_VERSION} AS build-executor-server
@@ -35,6 +36,10 @@ RUN apk add --no-cache git make gcc g++ musl-dev && \
     export CGO_CFLAGS="-D_LARGEFILE64_SOURCE" && \
     make install
 
+FROM docker.io/alpine:${ALPINE_VERSION} AS build-pymupdf
+RUN apk add --no-cache gcc musl-dev linux-headers make g++ clang-dev python3 python3-dev py3-pip && \
+    pip install --target /out pymupdf
+
 FROM docker.io/alpine:${ALPINE_VERSION} AS runtime
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
     bash \
@@ -42,6 +47,7 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     ffmpeg \
     ghostscript-fonts \
     imagemagick \
+    mupdf-tools \
     opencv \
     pandoc-cli \
     python3 \
@@ -110,6 +116,10 @@ ENV XONSH_SHOW_TRACEBACK=True
 COPY --from=build-upm /go/bin/upm /usr/local/bin/upm
 COPY --from=build-upm /workdir/upm/internal/backends/python/pypi_map.sqlite /pypi_map.sqlite
 ENV PYPI_MAP_DB=/pypi_map.sqlite
+
+# pymupdf
+ARG PYTHON_VERSION
+COPY --from=build-pymupdf /out/. /venv/lib/python${PYTHON_VERSION}/site-packages/
 
 # Executor server
 COPY --from=build-executor-server /workdir/target/release/executor-server /usr/local/bin/executor-server

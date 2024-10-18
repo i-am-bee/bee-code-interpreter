@@ -1,2 +1,4 @@
 ffmpeg # actually ffmpeg-python
 opencv-python # installed through OS package
+pymupdf # installed manually
+fitz # part of pymupdf
