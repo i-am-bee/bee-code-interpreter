@@ -93,8 +93,8 @@ RUN echo "executor:x:${UID}:${UID}::/home/executor:" >> /etc/passwd && \
     chown -R executor:executor /home/executor /workspace /venv
 USER executor
 
-# fontconfig
-RUN fc-cache -fv
+# Cache fonts
+RUN fc-cache -fv && python -c "import matplotlib.pyplot"
 
 # Python
 COPY requirements.txt requirements-skip.txt /
