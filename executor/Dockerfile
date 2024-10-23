@@ -84,6 +84,8 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     py3-xarray \
     py3-xarray-pyc \
     weasyprint \
+    xonsh \
+    xonsh-pyc \
     yt-dlp
 
 # Create user manually -- Alpine does not support high UIDs
@@ -99,10 +101,12 @@ USER executor
 RUN fc-cache -fv && python -c "import matplotlib.pyplot"
 
 # Python
+ARG PYTHON_VERSION
 COPY requirements.txt requirements-skip.txt /
 RUN python -m venv --system-site-packages /venv && /venv/bin/pip install --no-cache-dir -r /requirements.txt
-COPY sitecustomize.py /venv/lib/python3.12/site-packages
+COPY sitecustomize.py /venv/lib/python${PYTHON_VERSION}/site-packages
 ENV PATH="/venv/bin:$PATH"
+ENV PYTHONPATH="/venv/lib/python${PYTHON_VERSION}/site-packages/"
 
 # Pandoc
 COPY pandoc-wrapper /usr/local/bin/pandoc

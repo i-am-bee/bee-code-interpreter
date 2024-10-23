@@ -1,7 +1,4 @@
 import sys
-import warnings
-
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 original_import = __import__
 
