@@ -58,6 +58,7 @@ For a production setup, ensure that you have the following:
 - A service account, bound to the pod where `bee-code-interpreter` is running, with permissions to manage pods in the namespace it is configured to use.
 - The cluster must have the executor image available (either from a registry, or built from `./executor` in this repo).
 - You may check the health of the local service using `python -m code_interpreter.health_check`.
+- The shared folder with file objects should be periodically cleaned of old objects. The objects are identified by random ids and may be removed as soon as the consumer is done downloading them. If the objects are shared through a S3 bucket, we recommend setting up an auto-deletion policy.
 
 ---
 
