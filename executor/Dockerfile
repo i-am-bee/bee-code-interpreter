@@ -65,6 +65,8 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     py3-opencv-pyc \
     py3-pandas \
     py3-pandas-pyc \
+    py3-pdf2image \
+    py3-pdf2image-pyc \
     py3-pikepdf \
     py3-pikepdf-pyc \
     py3-pillow \

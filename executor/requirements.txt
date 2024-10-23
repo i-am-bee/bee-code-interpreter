@@ -4,9 +4,10 @@ matplotlib
 numpy
 moviepy
 pandas[excel,plot,output-formatting,computation]
+pdf2image
 pillow
 pypandoc
-PyPDF2
+PyPDF2==2.*
 pikepdf
 scipy
 sympy
