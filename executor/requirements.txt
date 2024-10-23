@@ -1,16 +1,2 @@
-ffmpeg-python
-jinja2
-matplotlib
-numpy
-moviepy
 pandas[excel,plot,output-formatting,computation]
-pdf2image
-pillow
-pypandoc
-PyPDF2==2.*
-pikepdf
-scipy
-sympy
-tabulate
-xarray
-xonsh
+PyPDF2==2.* # LLaMa 3.1 prefers the older version's API

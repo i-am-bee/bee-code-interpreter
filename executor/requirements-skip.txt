@@ -1,4 +1,24 @@
+# Installed through OS package:
+ffmpeg-python
+jinja2
+matplotlib
+moviepy
+numpy
+opencv-python
+pandas
+pdf2image
+pikepdf
+pillow
+pypandoc
+scipy
+sympy
+tabulate
+xarray
+xonsh
+
+# Installed manually:
+pymupdf
+
+# Auto-install corrections:
 ffmpeg # actually ffmpeg-python
-opencv-python # installed through OS package
-pymupdf # installed manually
 fitz # part of pymupdf
