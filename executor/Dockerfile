@@ -38,7 +38,7 @@ RUN apk add --no-cache git make gcc g++ musl-dev && \
 
 FROM docker.io/alpine:${ALPINE_VERSION} AS build-pymupdf
 RUN apk add --no-cache gcc musl-dev linux-headers make g++ clang-dev python3 python3-dev py3-pip && \
-    pip install --target /out pymupdf
+    pip install --target /out pymupdf==1.24.12
 
 FROM docker.io/alpine:${ALPINE_VERSION} AS runtime
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
