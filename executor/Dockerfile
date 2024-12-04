@@ -94,7 +94,7 @@ RUN echo "executor:x:${UID}:${UID}::/home/executor:" >> /etc/passwd && \
     echo "executor:!::0:::::" >> /etc/shadow && \
     echo "executor:x:${UID}:" >> /etc/group && \
     mkdir -p /home/executor /workspace /venv && \
-    chown -R executor:executor /home/executor /workspace /venv
+    chown -R ${UID}:${UID} /home/executor /workspace /venv
 USER executor
 
 # Cache fonts
