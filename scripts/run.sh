@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set -e
+git submodule update --init
 docker build -t localhost/bee-code-interpreter:local .
 docker build -t localhost/bee-code-executor:local executor
 kubectl delete -f k8s/local.yaml || true

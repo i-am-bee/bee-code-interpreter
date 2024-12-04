@@ -1,4 +1,4 @@
 [submodule "submodules/bee-proto"]
 	path = submodules/bee-proto
-	url = git@github.com:i-am-bee/bee-proto
+	url = ../bee-proto
 	branch = main
