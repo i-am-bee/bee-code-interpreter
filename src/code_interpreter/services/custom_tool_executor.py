@@ -72,7 +72,7 @@ class CustomToolExecutor:
                 ]
             )
 
-        typing_import_from_aliases = {
+        typing_import_aliases = {
             alias.asname or alias.name: alias.name
             for node in imports
             if isinstance(node, ast.Import)
@@ -119,7 +119,7 @@ class CustomToolExecutor:
             "type": "object",
             "title": function_def.name,
             "properties": {
-                arg.arg: _type_to_json_schema(arg.annotation, typing_import_from_aliases)
+                arg.arg: _type_to_json_schema(arg.annotation, typing_import_aliases)
                 | (
                     {"description": param_description}
                     if (param_description := param_descriptions.get(arg.arg))
