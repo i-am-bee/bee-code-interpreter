@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import ast
+from collections.abc import Mapping
 from dataclasses import dataclass
 import json
 import typing
@@ -71,11 +72,17 @@ class CustomToolExecutor:
                 ]
             )
 
-        import_aliases = {
-            alias.asname or alias.name
+        typing_import_from_aliases = {
+            alias.asname or alias.name: alias.name
             for node in imports
+            if isinstance(node, ast.Import)
             for alias in node.names
-            if alias.name == "typing"
+            if alias.name == "typing" and alias.asname is not None
+        } | {
+            alias.asname or alias.name: f"{node.module}.{alias.name}"
+            for node in imports
+            if isinstance(node, ast.ImportFrom) and node.module == "typing"
+            for alias in node.names
         }
 
         errors = [
@@ -112,7 +119,7 @@ class CustomToolExecutor:
             "type": "object",
             "title": function_def.name,
             "properties": {
-                arg.arg: _type_to_json_schema(arg.annotation, import_aliases)
+                arg.arg: _type_to_json_schema(arg.annotation, typing_import_from_aliases)
                 | (
                     {"description": param_description}
                     if (param_description := param_descriptions.get(arg.arg))
@@ -202,52 +209,47 @@ print(json.dumps(result))
 
         return json.loads(result.stdout)
 
-def _normalize_type_name(type_node_name: str, aliases: set) -> str:
-    """Normalize type names to their canonical forms."""
-    for alias in aliases:
-        if type_node_name.startswith(f"{alias}."):
-            return type_node_name[len(alias) + 1:].lower()
+def _to_json_schema_type(name: str, import_from_aliases: Mapping[str ,str]) -> str:
+    return import_from_aliases.get(name, name)
 
-    return type_node_name
-
-def _type_to_json_schema(type_node: ast.AST, import_aliases: set) -> dict:
+def _type_to_json_schema(type_node: ast.AST, aliases: Mapping[str ,str]) -> dict:
     if isinstance(type_node, ast.Subscript):
-        type_node_name = _normalize_type_name(ast.unparse(type_node.value), import_aliases)
+        type_node_name = _to_json_schema_type(ast.unparse(type_node.value), aliases)
 
-        if type_node_name == "list":
-            return {"type": "array", "items": _type_to_json_schema(type_node.slice, import_aliases)}
-        elif type_node_name == "dict" and isinstance(type_node.slice, ast.Tuple):
+        if type_node_name in {"list","typing.List"}:
+            return {"type": "array", "items": _type_to_json_schema(type_node.slice, aliases)}
+        elif type_node_name in {"dict","typing.Dict"} and isinstance(type_node.slice, ast.Tuple):
             key_type_node, value_type_node = type_node.slice.elts
-            key_type_node_name = _normalize_type_name(ast.unparse(key_type_node), import_aliases)
-            if key_type_node_name != "str":
+            key_type_node_name = _to_json_schema_type(ast.unparse(key_type_node), aliases)
+            if key_type_node_name not in {"str", "typing.AnyStr"}:
                 raise ValueError(f"Unsupported key type for dict: {ast.unparse(key_type_node)}")
             return {
                 "type": "object",
-                "additionalProperties": _type_to_json_schema(value_type_node, import_aliases),
+                "additionalProperties": _type_to_json_schema(value_type_node, aliases),
             }
-        elif type_node_name == "optional":
-            return {"anyOf": [{"type": "null"}, _type_to_json_schema(type_node.slice, import_aliases)]}
-        elif type_node_name == "union" and isinstance(type_node.slice, ast.Tuple):
-            return {"anyOf": [_type_to_json_schema(el, import_aliases) for el in type_node.slice.elts]}
-        elif type_node_name == "tuple" and isinstance(type_node.slice, ast.Tuple):
+        elif type_node_name in {"optional", "typing.Optional"}:
+            return {"anyOf": [{"type": "null"}, _type_to_json_schema(type_node.slice, aliases)]}
+        elif type_node_name in {"union", "typing.Union"} and isinstance(type_node.slice, ast.Tuple):
+            return {"anyOf": [_type_to_json_schema(el, aliases) for el in type_node.slice.elts]}
+        elif type_node_name in {"tuple", "typing.Tuple"} and isinstance(type_node.slice, ast.Tuple):
             return {
                 "type": "array",
                 "minItems": len(type_node.slice.elts),
-                "items": [_type_to_json_schema(el, import_aliases) for el in type_node.slice.elts],
+                "items": [_type_to_json_schema(el, aliases) for el in type_node.slice.elts],
                 "additionalItems": False,
             }
-        elif type_node_name == "literal":
+        elif type_node_name in {"literal", "typing.Literal", "typing.LiteralString"}:
             if isinstance(type_node.slice, ast.Tuple):
                 return {"enum": [ast.literal_eval(el) for el in type_node.slice.elts]}
             else:
                 return {"enum": [ast.literal_eval(type_node.slice)]}
-        elif type_node_name == "final":
-            return _type_to_json_schema(type_node.slice, import_aliases)
-        elif type_node_name == "annotated":
+        elif type_node_name in {"final", "typing.Final"}:
+            return _type_to_json_schema(type_node.slice, aliases)
+        elif type_node_name in {"annotated", "typing.Annotated"}:
             base_type, *annotations = type_node.slice.elts
-            return _type_to_json_schema(base_type, import_aliases)
+            return _type_to_json_schema(base_type, aliases)
 
-    type_node_name = _normalize_type_name(ast.unparse(type_node), import_aliases)
+    type_node_name = _to_json_schema_type(ast.unparse(type_node), aliases)
     if type_node_name == "int":
         return {"type": "integer"}
     elif type_node_name == "float":
