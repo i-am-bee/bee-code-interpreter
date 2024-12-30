@@ -221,7 +221,7 @@ def _type_to_json_schema(type_node: ast.AST, aliases: Mapping[str ,str]) -> dict
         elif type_node_name in {"dict","typing.Dict"} and isinstance(type_node.slice, ast.Tuple):
             key_type_node, value_type_node = type_node.slice.elts
             key_type_node_name = _to_json_schema_type(ast.unparse(key_type_node), aliases)
-            if key_type_node_name not in {"str", "typing.AnyStr"}:
+            if key_type_node_name not in {"str", "typing.AnyStr", "typing.Text"}:
                 raise ValueError(f"Unsupported key type for dict: {ast.unparse(key_type_node)}")
             return {
                 "type": "object",
@@ -254,14 +254,18 @@ def _type_to_json_schema(type_node: ast.AST, aliases: Mapping[str ,str]) -> dict
         return {"type": "integer"}
     elif type_node_name == "float":
         return {"type": "number"}
-    elif type_node_name == "str":
+    elif type_node_name in {"str","typing.Text", "typing.AnyStr"}:
         return {"type": "string"}
     elif type_node_name == "bool":
         return {"type": "boolean"}
-    elif type_node_name == "any":
+    elif type_node_name in {"dict", "typing.Dict", "typing.Mapping"}:
+        return {"type": "object"}
+    elif type_node_name in {"list", "typing.List"}:
         return {"type": "array"}
-
-    raise ValueError(f"Unsupported type: {type_node_name}")
+    elif type_node_name in {"any", "typing.Any"}:
+        return {"type": "array"}
+    else:
+        raise ValueError(f"Unsupported type: {type_node_name}")
 
 
 def _parse_docstring(docstring: str) -> typing.Tuple[str, str, dict[str, str]]:
