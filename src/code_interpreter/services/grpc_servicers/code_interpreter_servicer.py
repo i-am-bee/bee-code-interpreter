@@ -120,7 +120,7 @@ class CodeInterpreterServicer(code_interpreter_pb2_grpc.CodeInterpreterServiceSe
 
         try:
             result = await self.custom_tool_executor.execute(
-                tool_input=json.loads(request.tool_input_json),
+                tool_input_json=request.tool_input_json,
                 tool_source_code=request.tool_source_code,
             )
         except CustomToolExecuteError as e:

@@ -90,7 +90,12 @@ def test_parse_custom_tool_success(http_client: httpx.Client):
         "/v1/parse-custom-tool",
         json={
             "tool_source_code": '''
-def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *, c: typing.Union[list[str], dict[str, typing.Optional[float]]]) -> int:
+import typing
+import typing as banana
+from typing import Optional
+from typing import Union as Onion
+
+def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *, c: Onion[list[str], dict[str, banana.Optional[float]]]) -> int:
     """
     This tool is really really cool.
     Very toolish experience:
@@ -128,7 +133,7 @@ def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *,
                 "type": "array",
                 "minItems": 2,
                 "items": [
-                    {"anyOf": [{"type": "null"}, {"type": "string"}]},
+                    {"anyOf": [{"type": "string"}, {"type": "null"}]},
                     {"type": "string"},
                 ],
                 "additionalItems": False,
@@ -140,7 +145,7 @@ def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *,
                     {
                         "type": "object",
                         "additionalProperties": {
-                            "anyOf": [{"type": "null"}, {"type": "number"}]
+                            "anyOf": [{"type": "number"}, {"type": "null"}]
                         },
                     },
                 ],
@@ -213,6 +218,25 @@ def test_execute_custom_tool_success(http_client: httpx.Client):
     assert response.status_code == 200
     response_json = response.json()
     assert json.loads(response_json["tool_output_json"]) == 3
+
+
+def test_execute_custom_tool_advanced_success(http_client: httpx.Client):
+    response = http_client.post(
+        "/v1/execute-custom-tool",
+        json={
+            "tool_source_code": """
+import datetime
+
+def date_tool(a: datetime.datetime) -> str:
+    return f"The year is {a.year}"
+""",
+            "tool_input_json": '{"a": "2000-01-01T00:00:00"}',
+        },
+    )
+
+    assert response.status_code == 200
+    response_json = response.json()
+    assert json.loads(response_json["tool_output_json"]) == "The year is 2000"
 
 
 def test_parse_custom_tool_error(http_client: httpx.Client):

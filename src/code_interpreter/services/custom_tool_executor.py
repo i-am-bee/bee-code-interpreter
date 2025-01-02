@@ -14,14 +14,13 @@
 
 import ast
 from dataclasses import dataclass
-import json
 import typing
 import inspect
 import re
+import json
 import textwrap
-
-from pydantic import validate_call
-
+import pydantic
+import pydantic.json_schema
 from code_interpreter.services.kubernetes_code_executor import KubernetesCodeExecutor
 
 
@@ -29,7 +28,7 @@ from code_interpreter.services.kubernetes_code_executor import KubernetesCodeExe
 class CustomTool:
     name: str
     description: str
-    input_schema: dict
+    input_schema: dict[str, typing.Any]
 
 
 @dataclass
@@ -53,8 +52,8 @@ class CustomToolExecutor:
         The source code must contain a single function definition, optionally preceded by imports. The function must not have positional-only arguments, *args or **kwargs.
         The function arguments must have type annotations. The docstring must follow the ReST format -- :param something: and :return: directives are supported.
 
-        Supported types for input arguments: int, float, str, bool, typing.Any, list[...], dict[str, ...], typing.Tuple[...], typing.Optional[...], typing.Union[...], where ... is any of the supported types.
-        Supported types for return value: anything that can be JSON-serialized.
+        Function arguments will be converted to JSONSchema by Pydantic, so everything that can be (de)serialized through Pydantic can be used.
+        However, the imports that can be used in types are currently limited to `typing`, `pathlib` and `datetime` for safety reasons.
         """
         try:
             *imports, function_def = ast.parse(textwrap.dedent(tool_source_code)).body
@@ -99,12 +98,14 @@ class CustomToolExecutor:
             ast.get_docstring(function_def) or ""
         )
 
+        namespace = _build_namespace(imports)
+
         json_schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "title": function_def.name,
             "properties": {
-                arg.arg: _type_to_json_schema(arg.annotation)
+                arg.arg: _type_to_json_schema(arg.annotation, namespace)
                 | (
                     {"description": param_description}
                     if (param_description := param_descriptions.get(arg.arg))
@@ -153,11 +154,11 @@ class CustomToolExecutor:
             input_schema=json_schema,
         )
 
-    @validate_call
+    @pydantic.validate_call
     async def execute(
         self,
         tool_source_code: str,
-        tool_input: dict[str, typing.Any],
+        tool_input_json: str,
     ) -> typing.Any:
         """
         Execute the given custom tool with the given input.
@@ -166,24 +167,22 @@ class CustomToolExecutor:
         The input is expected to be valid according to the input schema produced by the parse method.
         """
 
+        clean_tool_source_code = textwrap.dedent(tool_source_code)
+        *imports, function_def = ast.parse(clean_tool_source_code).body
+
         result = await self.code_executor.execute(
             source_code=f"""
+# Import all tool dependencies here -- to aid the dependency detection
+{"\n".join(ast.unparse(node) for node in imports if isinstance(node, (ast.Import, ast.ImportFrom)))}
+
+import pydantic
 import contextlib
 import json
 
-# Import all tool dependencies here -- to aid the dependency detection
-{
-    "\n".join(
-        ast.unparse(node)
-        for node in ast.parse(textwrap.dedent(tool_source_code)).body
-        if isinstance(node, (ast.Import, ast.ImportFrom))
-    )
-}
-
 with contextlib.redirect_stdout(None):
     inner_globals = {{}}
-    exec(compile({repr(textwrap.dedent(tool_source_code))}, "<string>", "exec"), inner_globals)
-    result = next(x for x in inner_globals.values() if getattr(x, '__module__', ...) is None)(**{repr(tool_input)})
+    exec(compile({repr(clean_tool_source_code)}, "<string>", "exec"), inner_globals)
+    result = pydantic.TypeAdapter(inner_globals[{repr(function_def.name)}]).validate_json({repr(tool_input_json)})
 
 print(json.dumps(result))
         """,
@@ -193,50 +192,6 @@ print(json.dumps(result))
             raise CustomToolExecuteError(result.stderr)
 
         return json.loads(result.stdout)
-
-
-def _type_to_json_schema(type_node: ast.AST) -> dict:
-    if isinstance(type_node, ast.Subscript):
-        type_node_name = ast.unparse(type_node.value)
-        if type_node_name == "list":
-            return {"type": "array", "items": _type_to_json_schema(type_node.slice)}
-        elif type_node_name == "dict" and isinstance(type_node.slice, ast.Tuple):
-            key_type_node, value_type_node = type_node.slice.elts
-            if ast.unparse(key_type_node) != "str":
-                raise ValueError(f"Unsupported type: {type_node}")
-            return {
-                "type": "object",
-                "additionalProperties": _type_to_json_schema(value_type_node),
-            }
-        elif type_node_name == "Optional" or type_node_name == "typing.Optional":
-            return {"anyOf": [{"type": "null"}, _type_to_json_schema(type_node.slice)]}
-        elif (
-            type_node_name == "Union" or type_node_name == "typing.Union"
-        ) and isinstance(type_node.slice, ast.Tuple):
-            return {"anyOf": [_type_to_json_schema(el) for el in type_node.slice.elts]}
-        elif (
-            type_node_name == "Tuple" or type_node_name == "typing.Tuple"
-        ) and isinstance(type_node.slice, ast.Tuple):
-            return {
-                "type": "array",
-                "minItems": len(type_node.slice.elts),
-                "items": [_type_to_json_schema(el) for el in type_node.slice.elts],
-                "additionalItems": False,
-            }
-
-    type_node_name = ast.unparse(type_node)
-    if type_node_name == "int":
-        return {"type": "integer"}
-    elif type_node_name == "float":
-        return {"type": "number"}
-    elif type_node_name == "str":
-        return {"type": "string"}
-    elif type_node_name == "bool":
-        return {"type": "boolean"}
-    elif type_node_name == "Any" or type_node_name == "typing.Any":
-        return {"type": "array"}
-    else:
-        raise ValueError(f"Unsupported type: {type_node_name}")
 
 
 def _parse_docstring(docstring: str) -> typing.Tuple[str, str, dict[str, str]]:
@@ -262,3 +217,79 @@ def _parse_docstring(docstring: str) -> typing.Tuple[str, str, dict[str, str]]:
         elif match := re.match(r"return: ((?:.|\n)+)", chunk, flags=re.MULTILINE):
             return_description = match.group(1)
     return fn_description, return_description, param_descriptions
+
+
+def _build_namespace(
+    imports: list[ast.AST],
+    allowed_modules: set[str] = {"typing", "pathlib", "datetime"},
+) -> dict[str, typing.Any]:
+    namespace = {
+        "str": str,
+        "int": int,
+        "float": float,
+        "bool": bool,
+        "list": list,
+        "dict": dict,
+        "set": set,
+        "tuple": tuple,
+    }
+
+    for node in imports:
+        if isinstance(node, ast.Import):
+            for name in node.names:
+                if name.name in allowed_modules:
+                    namespace[name.asname or name.name] = __import__(name.name)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module in allowed_modules:
+                module = __import__(node.module, fromlist=[n.name for n in node.names])
+                for name in node.names:
+                    namespace[name.asname or name.name] = getattr(module, name.name)
+
+    return namespace
+
+
+def _type_to_json_schema(type_ast: ast.AST, namespace: dict) -> dict:
+    type_str = ast.unparse(type_ast)
+    if not _is_safe_type_ast(type_ast):
+        raise CustomToolParseError([f"Invalid type annotation `{type_str}`"])
+    try:
+        return pydantic.TypeAdapter(eval(type_str, namespace)).json_schema(
+            schema_generator=_GenerateJsonSchema
+        )
+    except Exception as e:
+        raise CustomToolParseError([f"Error when parsing type `{type_str}`: {e}"])
+
+
+class _GenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
+    schema_dialect = "http://json-schema.org/draft-07/schema#"
+
+    def tuple_schema(self, schema):
+        # Use draft-07 syntax for tuples
+        schema = super().tuple_schema(schema)
+        if "prefixItems" in schema:
+            schema["items"] = schema.pop("prefixItems")
+            schema.pop("maxItems")
+            schema["additionalItems"] = False
+        return schema
+
+
+def _is_safe_type_ast(node: ast.AST) -> bool:
+    match node:
+        case ast.Name():
+            return True
+        case ast.Attribute():
+            return _is_safe_type_ast(node.value)
+        case ast.Subscript():
+            return _is_safe_type_ast(node.value) and _is_safe_type_ast(node.slice)
+        case ast.Tuple() | ast.List():
+            return all(_is_safe_type_ast(elt) for elt in node.elts)
+        case ast.Constant():
+            return isinstance(node.value, (str, int, float, bool, type(None)))
+        case ast.BinOp():
+            return (
+                isinstance(node.op, ast.BitOr)
+                and _is_safe_type_ast(node.left)
+                and _is_safe_type_ast(node.right)
+            )
+        case _:
+            return False
