@@ -113,8 +113,9 @@ def test_parse_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):
 import typing
 import typing as banana
 from typing import Optional
+from typing import Union as Onion
 
-def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *, c: typing.Union[list[str], dict[str, banana.Optional[float]]]) -> int:
+def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *, c: Onion[list[str], dict[str, banana.Optional[float]]]) -> int:
     """
     This tool is really really cool.
     Very toolish experience:
