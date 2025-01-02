@@ -9,6 +9,7 @@ pandas
 pdf2image
 pikepdf
 pillow
+pydantic
 pypandoc
 scipy
 sympy

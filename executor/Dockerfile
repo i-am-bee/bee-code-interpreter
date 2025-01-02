@@ -73,6 +73,8 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
     py3-pillow-pyc \
     py3-pip \
     py3-pip-pyc \
+    py3-pydantic \
+    py3-pydantic-pyc \
     py3-pypandoc \
     py3-pypandoc-pyc \
     py3-scipy \

@@ -141,7 +141,7 @@ def create_http_server(
             "Executing custom tool with source code %s", request.tool_source_code
         )
         result = await custom_tool_executor.execute(
-            tool_input=json.loads(request.tool_input_json),
+            tool_input_json=request.tool_input_json,
             tool_source_code=request.tool_source_code,
         )
         logger.info("Executed custom tool with result %s", result)

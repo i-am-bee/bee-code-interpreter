@@ -110,7 +110,11 @@ def test_parse_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):
     response: ParseCustomToolResponse = grpc_stub.ParseCustomTool(
         ParseCustomToolRequest(
             tool_source_code='''
-def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *, c: typing.Union[list[str], dict[str, typing.Optional[float]]]) -> int:
+import typing
+import typing as banana
+from typing import Optional
+
+def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *, c: typing.Union[list[str], dict[str, banana.Optional[float]]]) -> int:
     """
     This tool is really really cool.
     Very toolish experience:
@@ -149,7 +153,7 @@ def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *,
                 "type": "array",
                 "minItems": 2,
                 "items": [
-                    {"anyOf": [{"type": "null"}, {"type": "string"}]},
+                    {"anyOf": [{"type": "string"}, {"type": "null"}]},
                     {"type": "string"},
                 ],
                 "additionalItems": False,
@@ -161,7 +165,7 @@ def my_tool(a: int, b: typing.Tuple[Optional[str], str] = ("hello", "world"), *,
                     {
                         "type": "object",
                         "additionalProperties": {
-                            "anyOf": [{"type": "null"}, {"type": "number"}]
+                            "anyOf": [{"type": "number"}, {"type": "null"}]
                         },
                     },
                 ],
@@ -247,6 +251,23 @@ def test_execute_custom_tool_success(grpc_stub: CodeInterpreterServiceStub):
 
     assert result.WhichOneof("response") == "success"
     assert result.success.tool_output_json == "3"
+
+
+def test_execute_custom_tool_advanced_success(grpc_stub: CodeInterpreterServiceStub):
+    result = grpc_stub.ExecuteCustomTool(
+        ExecuteCustomToolRequest(
+            tool_source_code="""
+import datetime
+
+def date_tool(a: datetime.datetime) -> str:
+    return f"The year is {a.year}"
+""",
+            tool_input_json='{"a": "2000-01-01T00:00:00"}',
+        )
+    )
+
+    assert result.WhichOneof("response") == "success"
+    assert result.success.tool_output_json == "\"The year is 2000\""
 
 
 def test_execute_custom_tool_error(grpc_stub: CodeInterpreterServiceStub):
