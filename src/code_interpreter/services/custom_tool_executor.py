@@ -159,6 +159,7 @@ class CustomToolExecutor:
         self,
         tool_source_code: str,
         tool_input_json: str,
+        env: typing.Mapping[str, str] = {},
     ) -> typing.Any:
         """
         Execute the given custom tool with the given input.
@@ -171,8 +172,7 @@ class CustomToolExecutor:
         *imports, function_def = ast.parse(clean_tool_source_code).body
 
         result = await self.code_executor.execute(
-            source_code=f"""
-# Import all tool dependencies here -- to aid the dependency detection
+            source_code=f"""# Import all tool dependencies here -- to aid the dependency detection
 {"\n".join(ast.unparse(node) for node in imports if isinstance(node, (ast.Import, ast.ImportFrom)))}
 
 import pydantic
@@ -185,7 +185,8 @@ with contextlib.redirect_stdout(None):
     result = pydantic.TypeAdapter(inner_globals[{repr(function_def.name)}]).validate_json({repr(tool_input_json)})
 
 print(json.dumps(result))
-        """,
+""",
+            env=env,
         )
 
         if result.exit_code != 0:

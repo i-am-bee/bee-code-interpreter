@@ -20,7 +20,6 @@ import httpx
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import AsyncGenerator, Mapping
-from frozendict import frozendict
 from pydantic import validate_call
 from tenacity import (
     retry,
@@ -82,7 +81,8 @@ class KubernetesCodeExecutor:
     async def execute(
         self,
         source_code: str,
-        files: Mapping[AbsolutePath, Hash] = frozendict(),
+        files: Mapping[AbsolutePath, Hash] = {},
+        env: Mapping[str, str] = {},
     ) -> Result:
         """
         Executes the given Python source code in a Kubernetes pod.
@@ -118,6 +118,7 @@ class KubernetesCodeExecutor:
                     f"http://{executor_pod_ip}:8000/execute",
                     json={
                         "source_code": source_code,
+                        "env": env,
                     },
                 )
             ).json()

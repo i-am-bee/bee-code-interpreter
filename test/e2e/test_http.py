@@ -85,6 +85,21 @@ with open('file.txt', 'r') as f:
     assert not response_json["files"]
 
 
+def test_execute_with_env(http_client: httpx.Client):
+    request_data = {
+        "source_code": "import os\nprint('Hello ' + os.environ['MY_NAME'])",
+        "files": {},
+        "env": {
+            "MY_NAME": "John Doe"
+        }
+    }
+    response = http_client.post("/v1/execute", json=request_data)
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["stdout"].strip() == "Hello John Doe"
+
+
+
 def test_parse_custom_tool_success(http_client: httpx.Client):
     response = http_client.post(
         "/v1/parse-custom-tool",
@@ -268,3 +283,20 @@ def test_execute_custom_tool_error(http_client: httpx.Client):
     assert response.status_code == 400
     response_json = response.json()
     assert "division by zero" in response_json["stderr"]
+
+
+def test_execute_custom_tool_with_env(http_client: httpx.Client):
+    response = http_client.post(
+        "/v1/execute-custom-tool",
+        json={
+            "tool_source_code": "import os\ndef greet() -> str:\n  return 'Hello ' + os.environ['MY_NAME']",
+            "tool_input_json": '{}',
+            "env": {
+                "MY_NAME": "John Doe"
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    response_json = response.json()
+    assert json.loads(response_json["tool_output_json"]) == "Hello John Doe"

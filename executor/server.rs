@@ -15,7 +15,7 @@
 use actix_web::{middleware::Logger, web, App, Error, HttpResponse, HttpServer};
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::env;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
@@ -30,6 +30,7 @@ use std::time::UNIX_EPOCH;
 struct ExecuteRequest {
     source_code: String,
     timeout: Option<u64>,
+    env: Option<HashMap<String, String>>,
 }
 
 #[derive(Serialize)]
@@ -148,11 +149,12 @@ async fn execute(payload: web::Json<ExecuteRequest>) -> Result<HttpResponse, Err
     tokio::fs::rename(source_dir.path().join("script.py"), source_dir.path().join("script.xsh")).await?;
     
     let timeout = Duration::from_secs(payload.timeout.unwrap_or(60));
+    let mut cmd = Command::new("xonsh"); // TODO: manually switch between python and shell for ~80ms perf gain
+    cmd.arg(source_dir.path().join("script.xsh"));
+    if let Some(env) = &payload.env { cmd.envs(env); }
     let (stdout, stderr, exit_code) = tokio::time::timeout(
         timeout,
-        Command::new("xonsh") // TODO: manually switch between python and shell for ~80ms perf gain
-            .arg(source_dir.path().join("script.xsh"))
-            .output(),
+        cmd.output(),
     )
     .await
     .map(|r| {
