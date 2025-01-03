@@ -35,7 +35,8 @@ logger = logging.getLogger("code_interpreter_service")
 
 class ExecuteRequest(BaseModel):
     source_code: str
-    files: Dict[AbsolutePath, Hash]
+    files: Dict[AbsolutePath, Hash] = {}
+    env: Dict[str, str] = {}
 
 
 class ExecuteResponse(BaseModel):
@@ -62,6 +63,7 @@ class ParseCustomToolErrorResponse(BaseModel):
 class ExecuteCustomToolRequest(BaseModel):
     tool_source_code: str
     tool_input_json: str
+    env: Dict[str, str] = {}
 
 
 class ExecuteCustomToolResponse(BaseModel):
@@ -95,6 +97,7 @@ def create_http_server(
             result = await code_executor.execute(
                 source_code=request.source_code,
                 files=request.files,
+                env=request.env,
             )
         except Exception as e:
             logger.exception("Error executing code")
@@ -143,6 +146,7 @@ def create_http_server(
         result = await custom_tool_executor.execute(
             tool_input_json=request.tool_input_json,
             tool_source_code=request.tool_source_code,
+            env=request.env,
         )
         logger.info("Executed custom tool with result %s", result)
         return ExecuteCustomToolResponse(tool_output_json=json.dumps(result))
