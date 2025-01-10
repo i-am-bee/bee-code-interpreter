@@ -12,7 +12,7 @@ def config():
 
 @pytest.fixture
 def http_client():
-    base_url = "http://localhost:8000"
+    base_url = "http://localhost:50081"
     return httpx.Client(base_url=base_url)
 
 
