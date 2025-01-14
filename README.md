@@ -22,7 +22,7 @@ Built from the ground up to be safe and reproducible.
 
 It is possible to quickly spin up Bee Code Interpreter locally. It is not necessary to have Python or Poetry set up for this, since all is done using Docker.
 
-1. Consider using [Bee Stack](https://github.com/i-am-bee/bee-stack), which sets up everything (including Bee Code Interpreter) for you. Only follow the rest of this guide if you don't want to run the full stack, or need to make some modifications to Bee Code Interpreter (like modifying the executor image).
+1. Consider using [Bee Stack](https://github.com/i-am-bee/bee-stack), which sets up everything (including Bee Code Interpreter) for you. Alternatively, to develop using Bee Agent Framework, you may use [Bee Framework Starter](https://github.com/i-am-bee/bee-agent-framework-starter). Only follow the rest of this guide if you don't want to run the full stack, or need to make some modifications to Bee Code Interpreter (like modifying the executor image).
 2. Install [Rancher Desktop](https://rancherdesktop.io/) -- a local Docker and Kubernetes distribution.
 > [!WARNING]
 > If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
