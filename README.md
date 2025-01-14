@@ -24,16 +24,16 @@ It is possible to quickly spin up Bee Code Interpreter locally. It is not necess
 
 1. Consider using [Bee Stack](https://github.com/i-am-bee/bee-stack), which sets up everything (including Bee Code Interpreter) for you. Only follow the rest of this guide if you don't want to run the full stack, or need to make some modifications to Bee Code Interpreter (like modifying the executor image).
 2. Install [Rancher Desktop](https://rancherdesktop.io/) -- a local Docker and Kubernetes distribution.
-    > [!WARNING]
-    > If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
-    > Most of the other options (like Podman Desktop) require an additional step to make locally built images available in Kubernetes.
-    > In that case, you might want to check `scripts/run-pull.sh` and modify it accordingly.
+> [!WARNING]
+> If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
+> Most of the other options (like Podman Desktop) require an additional step to make locally built images available in Kubernetes.
+> In that case, you might want to check `scripts/run-pull.sh` and modify it accordingly.
 3. If you already use `kubectl` to manage Kubernetes clusters, ensure that you have the correct context selected in `kubectl`.
 4. Run one of the following commands to spin up Bee Code Interpreter in the active `kubectl` context:
     - **Use a pre-built image** (recommended if you made no changes): `bash scripts/run-pull.sh`
     - **Build image locally**: `bash scripts/run-build.sh`
-        > [!WARNING]
-        > Building the image locally make take a long time -- up to a few hours on slower machines.
+> [!WARNING]
+> Building the image locally make take a long time -- up to a few hours on slower machines.
 5. Once the service is running, you can interact with it using the HTTP API described below.
 
 ---
