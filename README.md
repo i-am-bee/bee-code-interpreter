@@ -22,29 +22,19 @@ Built from the ground up to be safe and reproducible.
 
 It is possible to quickly spin up Bee Code Interpreter locally. It is not necessary to have Python or Poetry set up for this, since all is done using Docker.
 
-The only requirement is [Rancher Desktop](https://rancherdesktop.io/) -- a local Docker and Kubernetes distribution.
-
-> [!CAUTION]
-> If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
-> Many implementations (like Podman Desktop) require an additional step to make locally built images available in Kubernetes.
-> In that case, you might want to check `scripts/run-pull.sh` and modify it accordingly.
-
-The following script will pull the two images (`code-interpreter` and `code-interpreter-executor`) and set up an instance of Bee Code Interpreter in your local Kubernetes cluster.
-
-> [!CAUTION]
-> Ensure that you have the correct context selected in `kubectl` before running this command.
-
-```shell
-bash ./scripts/run-pull.sh
-```
-
-For local development, you may alternatively run this command, which will instead build the images. (The build may take a long time, since we are building Rust executables, which are resource-intensive to compile.)
-
-```shell
-bash ./scripts/run-build.sh
-```
-
-Once the service is running, you can interact with it using the HTTP API described below.
+1. Consider using [Bee Stack](https://github.com/i-am-bee/bee-stack), which sets up everything (including Bee Code Interpreter) for you. Only follow the rest of this guide if you don't want to run the full stack, or need to make some modifications to Bee Code Interpreter (like modifying the executor image).
+2. Install [Rancher Desktop](https://rancherdesktop.io/) -- a local Docker and Kubernetes distribution.
+    > [!CAUTION]
+    > If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
+    > Most of the other options (like Podman Desktop) require an additional step to make locally built images available in Kubernetes.
+    > In that case, you might want to check `scripts/run-pull.sh` and modify it accordingly.
+3. If you already use `kubectl` to manage Kubernetes clusters, ensure that you have the correct context selected in `kubectl`.
+4. Run one of the following commands to spin up Bee Code Interpreter in the active `kubectl` context:
+    - **Use a pre-built image** (recommended if you made no changes): `bash scripts/run-pull.sh`
+    - **Build image locally**: `bash scripts/run-build.sh`
+        > [!CAUTION]
+        > Building the image locally make take a long time -- up to a few hours on slower machines.
+5. Once the service is running, you can interact with it using the HTTP API described below.
 
 ---
 
@@ -139,7 +129,7 @@ Executes a custom tool with provided input.
 Example using curl:
 ```bash
 # Execute a simple Python script
-curl -X POST http://localhost:8000/v1/execute \
+curl -X POST http://localhost:50081/v1/execute \
   -H "Content-Type: application/json" \
   -d '{"source_code":"print(\"hello world\")"}'
 ```
