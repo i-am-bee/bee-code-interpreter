@@ -31,7 +31,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks.run]
-shell = "./scripts/run.sh"
+shell = "./scripts/run-build.sh"
 
 [tool.poe.tasks.health_check]
 cmd = "python -m code_interpreter.health_check"

@@ -9,7 +9,7 @@
   </a>
 </p>
 
-A gRPC service intended as a backend for an LLM that can run arbitrary pieces of Python code.
+A HTTP service intended as a backend for an LLM that can run arbitrary pieces of Python code.
 
 Built from the ground up to be safe and reproducible.
 
@@ -27,23 +27,121 @@ The only requirement is [Rancher Desktop](https://rancherdesktop.io/) -- a local
 > [!CAUTION]
 > If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
 > Many implementations (like Podman Desktop) require an additional step to make locally built images available in Kubernetes.
-> In that case, you might want to check `scripts/run.sh` and modify it accordingly.
+> In that case, you might want to check `scripts/run-pull.sh` and modify it accordingly.
 
-The following script will build the two containers (`code-interpreter` and `code-interpreter-executor`) and set up an instance of Bee Code Interpreter in your local Kubernetes cluster.
+The following script will pull the two images (`code-interpreter` and `code-interpreter-executor`) and set up an instance of Bee Code Interpreter in your local Kubernetes cluster.
 
 > [!CAUTION]
 > Ensure that you have the correct context selected in `kubectl` before running this command.
 
 ```shell
-bash ./scripts/run.sh
+bash ./scripts/run-pull.sh
 ```
 
-Once you see the line `INFO:root:Starting server on insecure port 0.0.0.0:50051`, Bee Code Interpreter should now be running!
+For local development, you may alternatively run this command, which will instead build the images. (The build may take a long time, since we are building Rust executables, which are resource-intensive to compile.)
 
-In order to interact with the service, install `grpcurl`. Run "hello world" with:
+```shell
+bash ./scripts/run-build.sh
+```
 
+Once the service is running, you can interact with it using the HTTP API described below.
+
+---
+
+## 📡 HTTP API Reference
+
+The service exposes the following HTTP endpoints:
+
+### Execute Code
+
+Executes arbitrary Python code in a sandboxed environment. All `import`s are checked and missing libraries are installed on-the-fly. `file_hash` refers to the hash-based filename as used in the storage folder.
+
+**Endpoint:** `POST /v1/execute`
+
+**Request Body:**
+```json
+{
+    "source_code": string,
+    "files": {
+        "file_path": "file_hash"
+    },
+    "env": {
+        "ENV_VAR": "value"
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "stdout": string,
+    "stderr": string,
+    "exit_code": number,
+    "files": {
+        "file_path": "file_hash"
+    }
+}
+```
+
+### Parse Custom Tool
+
+Parses a custom tool definition and returns its metadata.
+
+**Endpoint:** `POST /v1/parse-custom-tool`
+
+**Request Body:**
+```json
+{
+    "tool_source_code": string
+}
+```
+
+**Response:**
+```json
+{
+    "tool_name": string,
+    "tool_input_schema_json": string,
+    "tool_description": string
+}
+```
+
+### Execute Custom Tool
+
+Executes a custom tool with provided input.
+
+**Endpoint:** `POST /v1/execute-custom-tool`
+
+**Request Body:**
+```json
+{
+    "tool_source_code": string,
+    "tool_input_json": string, // a string-encoded JSON object
+    "env": {
+        "ENV_VAR": "value"
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "tool_output_json": string
+}
+```
+
+**Error Response:**
+```json
+{
+    "stderr": string
+}
+```
+
+Example using curl:
 ```bash
-grpcurl -d '{"source_code":"print(\"hello world\")"}' -plaintext -max-time 60 127.0.0.1:50051 code_interpreter.v1.CodeInterpreterService/Execute
+# Execute a simple Python script
+curl -X POST http://localhost:8000/v1/execute \
+  -H "Content-Type: application/json" \
+  -d '{"source_code":"print(\"hello world\")"}'
 ```
 
 ---

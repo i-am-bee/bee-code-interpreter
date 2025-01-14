@@ -2,5 +2,4 @@
 python = "3.12"
 "pipx:poetry" = "latest"
 "pipx:poethepoet" = "latest"
-grpcurl = "latest"
 "go:github.com/B1NARY-GR0UP/nwa" = "latest"
