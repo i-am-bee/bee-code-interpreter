@@ -14,12 +14,9 @@
 # limitations under the License.
 set -e
 git submodule update --init
-docker pull icr.io/i-am-bee/bee-code-interpreter:latest
-docker tag icr.io/i-am-bee/bee-code-interpreter:latest localhost/bee-code-interpreter:local
-docker pull icr.io/i-am-bee/bee-code-executor:latest
-docker tag icr.io/i-am-bee/bee-code-executor:latest localhost/bee-code-executor:local
 kubectl delete -f k8s/local.yaml || true
-kubectl apply -f k8s/local.yaml
+kubectl delete -f k8s/pull.yaml || true
+kubectl apply -f k8s/pull.yaml
 kubectl wait --for=condition=Ready pod/code-interpreter-service
 kubectl port-forward pods/code-interpreter-service 50081:50081 50051:50051 &
 kubectl logs --follow code-interpreter-service

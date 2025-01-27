@@ -17,6 +17,7 @@ git submodule update --init
 docker build -t localhost/bee-code-interpreter:local .
 docker build -t localhost/bee-code-executor:local executor
 kubectl delete -f k8s/local.yaml || true
+kubectl delete -f k8s/pull.yaml || true
 kubectl apply -f k8s/local.yaml
 kubectl wait --for=condition=Ready pod/code-interpreter-service
 kubectl port-forward pods/code-interpreter-service 50081:50081 50051:50051 &
