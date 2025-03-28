@@ -1,45 +1,51 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="/docs/assets/Bee_logo_white.svg">
-    <source media="(prefers-color-scheme: light)" srcset="/docs/assets/Bee_logo_black.svg">
-    <img alt="Bee Framework logo" height="90">
-  </picture>
-</p>
+<h1 align="left">BeeAI Code Interpreter</h1>
 
-<h1 align="center">bee-code-interpreter</h1>
-
-<p align="center">
+<p align="left">
   <a aria-label="Join the community on GitHub" href="https://github.com/i-am-bee/bee-code-interpreter/discussions">
-    <img alt="" src="https://img.shields.io/badge/Join%20the%20community-blueviolet.svg?style=for-the-badge&labelColor=000000&label=Bee">
+    <img alt="" src="https://img.shields.io/badge/Join%20the%20community-blueviolet.svg?style=for-the-badge&labelColor=000000&label=BeeAI">
   </a>
 </p>
 
-A HTTP service intended as a backend for an LLM that can run arbitrary pieces of Python code.
-
-Built from the ground up to be safe and reproducible.
+<p align="left">
+BeeAI Code Interpreter is a powerful HTTP service built to enable LLMs to execute arbitrary Python code. Engineered with safety and reproducibility at the core, this service is designed to seamlessly integrate with your applications.
+</p>
 
 > [!NOTE]
-> This project contains submodules. Be sure to clone it with `git clone --recurse-submodules`, or initialize the submodules later with `git submodule update --init`.
+> This project includes submodules. Clone it using:
+> `git clone --recurse-submodules`.
+> 
+> If you've already cloned it, initialize submodules with:
+> `git submodule update --init`.
+
+You can quickly set up BeeAI Code Interpreter locally without needing to install Python or Poetry, as everything runs inside Docker.
 
 ---
 
-## 🪑 Local set-up
+## ⚡ Quick start
 
-It is possible to quickly spin up Bee Code Interpreter locally. It is not necessary to have Python or Poetry set up for this, since all is done using Docker.
+### 👉 **Recommended: [BeeAI Framework Python Starter](https://github.com/i-am-bee/beeai-framework-py-starter)**
 
-1. Consider using [Bee Stack](https://github.com/i-am-bee/bee-stack), which sets up everything (including Bee Code Interpreter) for you. Alternatively, to develop using Bee Agent Framework, you may use [Bee Framework Starter](https://github.com/i-am-bee/bee-agent-framework-starter). Only follow the rest of this guide if you don't want to run the full stack, or need to make some modifications to Bee Code Interpreter (like modifying the executor image).
-2. Install [Rancher Desktop](https://rancherdesktop.io/) -- a local Docker and Kubernetes distribution.
+BeeAI Framework Python Starter helps you set up everything, including BeeAI Code Interpreter. The starter template is also available in [TypeScript](https://github.com/i-am-bee/beeai-framework-ts-starter).
+
+## Installation
+
+If you wish to make modifications to BeeAI Code Interpreter (like modifying the executor image), continue with the following:
+
+1. **Install Rancher Desktop:** Download and install [Rancher Desktop](https://rancherdesktop.io/), a local Docker and Kubernetes distribution.
 > [!WARNING]
 > If you use a different local Docker / Kubernetes environment than Rancher Desktop, you may have a harder time.
 > Most of the other options (like Podman Desktop) require an additional step to make locally built images available in Kubernetes.
 > In that case, you might want to check `scripts/run-pull.sh` and modify it accordingly.
-3. If you already use `kubectl` to manage Kubernetes clusters, ensure that you have the correct context selected in `kubectl`.
-4. Run one of the following commands to spin up Bee Code Interpreter in the active `kubectl` context:
+
+2. **Verify kubectl Context:** If you're using `kubectl` to manage Kubernetes clusters, make sure the correct context is context.
+
+3. **Run BeeAI Code Interpreter:** Run one of the following commands to spin up BeeAI Code Interpreter in the active `kubectl` context:
     - **Use a pre-built image** (recommended if you made no changes): `bash scripts/run-pull.sh`
     - **Build image locally**: `bash scripts/run-build.sh`
 > [!WARNING]
 > Building the image locally make take a long time -- up to a few hours on slower machines.
-5. Once the service is running, you can interact with it using the HTTP API described below.
+
+4. **Interacting with the Service:** Once the service is running, you can interact with it using the HTTP API described below.
 
 ---
 
@@ -49,7 +55,12 @@ The service exposes the following HTTP endpoints:
 
 ### Execute Code
 
-Executes arbitrary Python code in a sandboxed environment. All `import`s are checked and missing libraries are installed on-the-fly. `file_hash` refers to the hash-based filename as used in the storage folder.
+This endpoint executes arbitrary Python code in a sandboxed environment, with on-the-fly installation of any missing libraries.
+
+> [!NOTE]
+> All `import`s are checked and missing libraries are installed on-the-fly. 
+> 
+> `file_hash` refers to the hash-based filename as used in the storage folder.
 
 **Endpoint:** `POST /v1/execute`
 
@@ -80,7 +91,7 @@ Executes arbitrary Python code in a sandboxed environment. All `import`s are che
 
 ### Parse Custom Tool
 
-Parses a custom tool definition and returns its metadata.
+This endpoint parses a custom tool definition and returns its metadata.
 
 **Endpoint:** `POST /v1/parse-custom-tool`
 
@@ -102,7 +113,7 @@ Parses a custom tool definition and returns its metadata.
 
 ### Execute Custom Tool
 
-Executes a custom tool with provided input.
+This endpoint executes a custom tool with the provided input.
 
 **Endpoint:** `POST /v1/execute-custom-tool`
 
@@ -143,9 +154,11 @@ curl -X POST http://localhost:50081/v1/execute \
 
 ## 🧳 Production setup
 
-All configuration options are defined and described in `src/code_interpreter/config.py`. You can override them using environment variables with `APP_` prefix, e.g. `APP_EXECUTOR_IMAGE` to override `executor_image`.
+To configure BeeAI Code Interpreter for production:
 
-For a production setup, ensure that you have the following:
+1. All configuration options are located in `src/code_interpreter/config.py`. Override them using environment variables with `APP_` prefix, e.g. `APP_EXECUTOR_IMAGE` to override `executor_image`.
+
+2. For production deployment, ensure the following:
 - A Kubernetes cluster with a secure container runtime (gVisor, Kata Containers, Firecracker, etc.)
   > ⚠️ Docker containers are not fully sandboxed by default. To protect from malicious attackers, do not skip this step.
 - A service account, bound to the pod where `bee-code-interpreter` is running, with permissions to manage pods in the namespace it is configured to use.
