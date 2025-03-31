@@ -4,7 +4,7 @@ A repository maintainer is a committer with the additional privilege of merging 
 
 ## Current Maintainers
 
-Maintainers are listed in alphabetical order by name.
+Maintainers are listed in alphabetical order by last name.
 
 | Name | GitHub Username |
 | ---- | ---- |
