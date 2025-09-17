@@ -1,30 +1,42 @@
-[tool.poetry]
+[project]
 name = "bee-code-interpreter"
 version = "0.0.29"
-license = "Apache-2.0"
 description = "Service intended as a backend for an LLM that can run arbitrary pieces of Python code."
-authors = [ "Jan Pokorný <jan.pokorny@ibm.com>", "Tomáš Dvořák <tomas.dvorak@ibm.com>" ]
-packages = [ { include = "code_interpreter", from = "src" } ]
+authors = [
+    { name = "Jan Pokorný", email = "jan.pokorny@ibm.com" },
+    { name = "Tomáš Dvořák", email = "tomas.dvorak@ibm.com" },
+]
+requires-python = "==3.12.*"
+license = "Apache-2.0"
+dependencies = [
+    "aiorun>=2024.8.1,<2025",
+    "anyio>=4.6.2.post1,<5",
+    "pydantic>=2.9.2,<3",
+    "pydantic-settings>=2.5.2,<3",
+    "tenacity>=9.0.0,<10",
+    "httpx>=0.27.2,<0.28",
+    "fastapi>=0.115.2,<0.116",
+    "uvicorn>=0.31.1,<0.32",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3,<9",
+    "poethepoet>=0.29.0,<0.30",
+]
 
-aiorun = "^2024.8.1"
-anyio = "^4.6.2.post1"
-pydantic = "^2.9.2"
-pydantic-settings = "^2.5.2"
-tenacity = "^9.0.0"
-httpx = "^0.27.2"
-fastapi = "^0.115.2"
-uvicorn = "^0.31.1"
+[tool.hatch.build.targets.sdist]
+include = ["src/code_interpreter"]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.3"
-poethepoet = "^0.29.0"
+[tool.hatch.build.targets.wheel]
+include = ["src/code_interpreter"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/code_interpreter" = "code_interpreter"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.poe.tasks.run]
 shell = "./scripts/run-build.sh"
