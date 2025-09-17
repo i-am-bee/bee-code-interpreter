@@ -2,19 +2,15 @@
 name = "bee-code-interpreter"
 version = "0.0.29"
 license = "Apache-2.0"
-description = "A gRPC service intended as a backend for an LLM that can run arbitrary pieces of Python code."
+description = "Service intended as a backend for an LLM that can run arbitrary pieces of Python code."
 authors = [ "Jan Pokorný <jan.pokorny@ibm.com>", "Tomáš Dvořák <tomas.dvorak@ibm.com>" ]
-packages = [ { include = "code_interpreter", from = "src" }, { include = "proto", from = "submodules/bee-proto/gen/python" }, { include = "buf", from = "submodules/bee-proto/gen/python" } ]
+packages = [ { include = "code_interpreter", from = "src" } ]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 
 aiorun = "^2024.8.1"
 anyio = "^4.6.2.post1"
-grpcio = "^1.66.2"
-grpcio-reflection = "^1.66.2"
-protobuf = "5.28.1" # NOTE: needs to be in sync with generated code
-protovalidate = "^0.4.0" # NOTE: breaking change in 0.5.0 w.r.t. generated code
 pydantic = "^2.9.2"
 pydantic-settings = "^2.5.2"
 tenacity = "^9.0.0"
@@ -33,12 +29,9 @@ build-backend = "poetry.core.masonry.api"
 [tool.poe.tasks.run]
 shell = "./scripts/run-build.sh"
 
-[tool.poe.tasks.health_check]
-cmd = "python -m code_interpreter.health_check"
-
 [tool.poe.tasks.copyright]
 cmd = "nwa add -l apache -c \"IBM Corp.\" scripts executor/{server.rs,Dockerfile} test src examples"
 
 [tool.poe.tasks.test]
-help = "Verify executor is running + run tests"
-sequence = [{ cmd = "python -m code_interpreter.health_check" }, { shell = "pytest -v test" } ]
+help = "Run tests"
+shell = "pytest -v test"

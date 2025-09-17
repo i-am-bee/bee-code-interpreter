@@ -20,13 +20,8 @@ from functools import cached_property
 
 import os
 from fastapi import FastAPI
-import grpc
 from code_interpreter.config import Config
 from code_interpreter.services.custom_tool_executor import CustomToolExecutor
-from code_interpreter.services.grpc_server import GrpcServer
-from code_interpreter.services.grpc_servicers.code_interpreter_servicer import (
-    CodeInterpreterServicer,
-)
 from code_interpreter.services.http_server import create_http_server
 from code_interpreter.services.kubectl import Kubectl
 from code_interpreter.services.kubernetes_code_executor import KubernetesCodeExecutor
@@ -87,33 +82,6 @@ class ApplicationContext:
     def custom_tool_executor(self) -> CustomToolExecutor:
         return CustomToolExecutor(
             code_executor=self.code_executor,
-        )
-
-    @cached_property
-    def grpc_servicers(self) -> list:
-        return [
-            CodeInterpreterServicer(
-                code_executor=self.code_executor,
-                custom_tool_executor=self.custom_tool_executor,
-                request_id_context_var=self.request_id_context_var,
-            )
-        ]
-    
-    @cached_property
-    def grpc_server_credentials(self) -> grpc.ServerCredentials | None:
-        if not self.config.grpc_tls_cert or not self.config.grpc_tls_cert_key or not self.config.grpc_tls_ca_cert:
-            return None
-        
-        return grpc.ssl_server_credentials(
-            private_key_certificate_chain_pairs=[(self.config.grpc_tls_cert_key, self.config.grpc_tls_cert)],
-            root_certificates=self.config.grpc_tls_ca_cert
-        )
-
-    @cached_property
-    def grpc_server(self) -> GrpcServer:
-        return GrpcServer(
-            servicers=self.grpc_servicers,
-            server_credentials=self.grpc_server_credentials
         )
 
     @cached_property

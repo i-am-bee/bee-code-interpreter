@@ -3,4 +3,3 @@
 !poetry.lock
 !pyproject.toml
 !src
-!submodules/bee-proto/gen/python

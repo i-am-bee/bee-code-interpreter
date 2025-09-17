@@ -40,26 +40,13 @@ class Config(BaseSettings):
         },
         "loggers": {
             "kubectl": {"level": "INFO"},
-            "grpc_server": {"level": "INFO"},
             "code_interpreter_servicer": {"level": "INFO"},
             "kubernetes_code_executor": {"level": "INFO"},
         },
     }
 
-    # the address and port gRPC server will listen on
-    grpc_listen_addr: str = "0.0.0.0:50051"
-
     # the address and port HTTP server will listen on
     http_listen_addr: str = "0.0.0.0:50081"
-
-    # text content of the TLS certificate file
-    grpc_tls_cert: bytes | None = None
-
-    # text content of the TLS key file
-    grpc_tls_cert_key: bytes | None = None
-
-    # text content of the CA certificate file
-    grpc_tls_ca_cert: bytes | None = None
 
     # the image to use for the executor pods
     executor_image: str = "localhost/bee-code-executor:local"

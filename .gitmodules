@@ -1,4 +1,0 @@
-[submodule "submodules/bee-proto"]
-	path = submodules/bee-proto
-	url = ../bee-proto
-	branch = main

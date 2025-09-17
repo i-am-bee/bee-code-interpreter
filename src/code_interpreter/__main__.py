@@ -21,16 +21,13 @@ from code_interpreter.application_context import ApplicationContext
 
 async def main():
     ctx = ApplicationContext()
-    await asyncio.gather(
-        uvicorn.Server(
-            uvicorn.Config(
-                ctx.http_server,
-                host=ctx.config.http_listen_addr.split(":")[0],
-                port=int(ctx.config.http_listen_addr.split(":")[1]),
-                loop="asyncio",
-            )
-        ).serve(),
-        ctx.grpc_server.start(listen_addr=ctx.config.grpc_listen_addr),
-    )
+    await uvicorn.Server(
+        uvicorn.Config(
+            ctx.http_server,
+            host=ctx.config.http_listen_addr.split(":")[0],
+            port=int(ctx.config.http_listen_addr.split(":")[1]),
+            loop="asyncio",
+        )
+    ).serve()
 
 aiorun.run(main())
